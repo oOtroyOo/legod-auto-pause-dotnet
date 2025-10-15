@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net48</TargetFramework>
+        <UseWPF>true</UseWPF>
+        <LangVersion>preview</LangVersion>
+        <Nullable>enable</Nullable>
+        <ApplicationIcon>$(SolutionDir)..\legod.ico</ApplicationIcon>
+
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <DebugType>none</DebugType>
+        <DebugSymbols>false</DebugSymbols>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="$(SolutionDir)..\config.ini">
+            <Link>config.ini</Link>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
+        <Content Remove="App.config"/>
+        <Content Remove="$(AssemblyName).exe.config"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="WPF-UI.Tray" Version="*"/>
+        <PackageReference Include="WPF-UI" Version="*"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+        <PackageReference Include="JetBrains.Profiler.Api" Version="*"/>
+        <PackageReference Include="coverlet.collector" Version="6.0.2"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0"/>
+        <PackageReference Include="NUnit" Version="4.2.2"/>
+        <PackageReference Include="NUnit.Analyzers" Version="4.4.0"/>
+        <PackageReference Include="NUnit3TestAdapter" Version="4.6.0"/>
+
+        <Using Include="NUnit.Framework"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+        <PackageReference Include="System.Text.Encoding.CodePages" Version="*"/>
+    </ItemGroup>
+
+    <Target Name="PostPublish" AfterTargets="Publish">
+        <Delete Files="$(PublishDir)$(AssemblyName).exe.config"/>
+    </Target>
+</Project>
