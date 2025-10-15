@@ -5,7 +5,7 @@
 
 using Wpf.Ui.Appearance;
 
-namespace LegodPause.Console.Utilities;
+namespace LegodPause.Utilities;
 
 public static class ThemeUtilities
 {

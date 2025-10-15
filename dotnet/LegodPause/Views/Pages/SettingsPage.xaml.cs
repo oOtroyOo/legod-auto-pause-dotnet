@@ -3,10 +3,10 @@
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
 
-using LegodPause.Console.Utilities;
+using LegodPause.Utilities;
 using Wpf.Ui.Appearance;
 
-namespace LegodPause.Console.Views.Pages;
+namespace LegodPause.Views.Pages;
 
 /// <summary>
 /// Interaction logic for SettingsPage.xaml

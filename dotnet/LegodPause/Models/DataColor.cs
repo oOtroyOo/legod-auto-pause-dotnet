@@ -3,7 +3,7 @@
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
 
-namespace LegodPause.Console.Models;
+namespace LegodPause.Models;
 
 public struct DataColor
 {

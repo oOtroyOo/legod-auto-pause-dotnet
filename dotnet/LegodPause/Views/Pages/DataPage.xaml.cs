@@ -3,10 +3,10 @@
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
 
-using LegodPause.Console.Models;
-using LegodPause.Console.Utilities;
+using LegodPause.Models;
+using LegodPause.Utilities;
 
-namespace LegodPause.Console.Views.Pages;
+namespace LegodPause.Views.Pages;
 
 /// <summary>
 /// Interaction logic for DataView.xaml

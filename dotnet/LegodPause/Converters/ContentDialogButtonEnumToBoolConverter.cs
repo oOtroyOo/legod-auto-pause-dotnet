@@ -3,10 +3,8 @@
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
 
-global using System;
-global using System.Collections.ObjectModel;
-global using System.Threading;
-global using System.Windows;
-global using System.Windows.Media;
-global using Wpf.Ui;
-global using System.Globalization;
+using Wpf.Ui.Controls;
+
+namespace LegodPause.Converters;
+
+internal class ContentDialogButtonEnumToBoolConverter : EnumToBoolConverter<ContentDialogButton> { }

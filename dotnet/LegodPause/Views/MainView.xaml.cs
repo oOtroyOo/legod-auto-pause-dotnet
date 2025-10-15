@@ -3,10 +3,10 @@
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
 
-using LegodPause.Console.Utilities;
-using LegodPause.Console.Views.Pages;
+using LegodPause.Utilities;
+using LegodPause.Views.Pages;
 
-namespace LegodPause.Console.Views;
+namespace LegodPause.Views;
 
 public partial class MainView
 {
