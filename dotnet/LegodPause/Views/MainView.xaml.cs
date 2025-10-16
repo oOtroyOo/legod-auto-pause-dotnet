@@ -10,10 +10,14 @@ namespace LegodPause.Views;
 
 public partial class MainView
 {
+    public ObservableCollection<Wpf.Ui.Controls.MenuItem> TrayMenuItems { get; } =
+    [
+        new Wpf.Ui.Controls.MenuItem { Header = "Home", Tag = "tray_home" },
+        new Wpf.Ui.Controls.MenuItem { Header = "Close", Tag = "tray_close" },
+    ];
+
     public MainView()
     {
-        DataContext = this;
-
         InitializeComponent();
 
         Loaded += (_, _) => RootNavigation.Navigate(typeof(DashboardPage));

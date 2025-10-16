@@ -2,12 +2,14 @@
 
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <TargetFramework>net481</TargetFramework>
+        <TargetFramework>net48</TargetFramework>
+        <Version>0.0.1</Version>
         <UseWPF>true</UseWPF>
         <LangVersion>preview</LangVersion>
         <Nullable>enable</Nullable>
         <ApplicationIcon>$(SolutionDir)..\legod.ico</ApplicationIcon>
-
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <GenerateProgramFile>false</GenerateProgramFile>  <!-- Microsoft.NET.Test.Sdk 会带Main函数导致重复定义-->
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -20,8 +22,6 @@
             <Link>config.ini</Link>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         </Content>
-        <Content Remove="App.config"/>
-        <Content Remove="$(AssemblyName).exe.config"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -39,6 +39,8 @@
         <PackageReference Include="NUnit3TestAdapter" Version="4.6.0"/>
 
         <Using Include="NUnit.Framework"/>
+
+
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

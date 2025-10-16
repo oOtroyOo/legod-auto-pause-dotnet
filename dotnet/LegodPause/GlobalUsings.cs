@@ -10,3 +10,4 @@ global using System.Windows;
 global using System.Windows.Media;
 global using Wpf.Ui;
 global using System.Globalization;
+global using System.Text;

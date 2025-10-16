@@ -22,12 +22,20 @@
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <ui:Button Grid.Column="0" Margin="0,0,4,0"
-                       Icon="{ui:SymbolIcon ArrowCircleLeft48}">
+                       Icon="{ui:SymbolIcon ArrowCircleLeft48}"
+                       Click="backBtn_Click">
             </ui:Button>
-            <ui:TextBox Grid.Column="1" Padding="0"></ui:TextBox>
+            <ui:TextBox
+                x:Name="UrlText"
+                KeyDown="UrlText_OnKeyDown"
+                Grid.Column="1" Padding="0">
+            </ui:TextBox>
         </Grid>
 
-        <wv2:WebView2 Source="https://wpfui.lepo.co" />
+        <wv2:WebView2 Name="WebView"
+                      NavigationStarting="WebView_OnNavigationStarting"
+                      CoreWebView2InitializationCompleted="WebView_CoreWebView2InitializationCompleted"
+                      Source="https://www.baidu.com" />
 
     </DockPanel>
 </Page>

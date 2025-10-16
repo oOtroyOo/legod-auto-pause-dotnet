@@ -48,6 +48,7 @@ public static class ThemeUtilities
         {
             window.KeyDown += (s, e) =>
             {
+                return;
                 if (e.Key == System.Windows.Input.Key.T)
                 {
                     ChangeTheme();

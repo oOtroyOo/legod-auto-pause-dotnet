@@ -8,6 +8,7 @@
     xmlns:pages="clr-namespace:LegodPause.Views.Pages"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:tray="http://schemas.lepo.co/wpfui/2022/xaml/tray"
+    DataContext="{Binding RelativeSource={RelativeSource Self}}"
     Title="WPF UI - Console Demo"
     Width="1200"
     Height="654"
@@ -17,28 +18,28 @@
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
 
-    <ui:FluentWindow.InputBindings>
-        <KeyBinding
-            Key="F"
-            Command="{Binding ElementName=AutoSuggestBox, Path=FocusCommand}"
-            Modifiers="Control" />
-    </ui:FluentWindow.InputBindings>
+    <!-- <ui:FluentWindow.InputBindings> -->
+    <!--     <KeyBinding -->
+    <!--         Key="F" -->
+    <!--         Command="{Binding ElementName=AutoSuggestBox, Path=FocusCommand}" -->
+    <!--         Modifiers="Control" /> -->
+    <!-- </ui:FluentWindow.InputBindings> -->
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <ui:NavigationView x:Name="RootNavigation" Grid.Row="1">
-            <ui:NavigationView.AutoSuggestBox>
-                <ui:AutoSuggestBox x:Name="AutoSuggestBox" PlaceholderText="Search">
-                    <ui:AutoSuggestBox.Icon>
-                        <ui:IconSourceElement>
-                            <ui:SymbolIconSource Symbol="Search24" />
-                        </ui:IconSourceElement>
-                    </ui:AutoSuggestBox.Icon>
-                </ui:AutoSuggestBox>
-            </ui:NavigationView.AutoSuggestBox>
+        <ui:NavigationView x:Name="RootNavigation" Grid.Row="1" IsBackButtonVisible="Collapsed">
+            <!-- <ui:NavigationView.AutoSuggestBox> -->
+            <!--     <ui:AutoSuggestBox x:Name="AutoSuggestBox" PlaceholderText="Search"> -->
+            <!--         <ui:AutoSuggestBox.Icon> -->
+            <!--             <ui:IconSourceElement> -->
+            <!--                 <ui:SymbolIconSource Symbol="Search24" /> -->
+            <!--             </ui:IconSourceElement> -->
+            <!--         </ui:AutoSuggestBox.Icon> -->
+            <!--     </ui:AutoSuggestBox> -->
+            <!-- </ui:NavigationView.AutoSuggestBox> -->
             <ui:NavigationView.Header>
                 <ui:BreadcrumbBar
                     Margin="42,32,0,0"
@@ -52,14 +53,6 @@
                     TargetPageType="{x:Type pages:DashboardPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Home24" />
-                    </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
-                <ui:NavigationViewItem
-                    Content="Data"
-                    NavigationCacheMode="Enabled"
-                    TargetPageType="{x:Type pages:DataPage}">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="DataHistogram24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem
@@ -92,7 +85,7 @@
             MenuOnRightClick="True"
             TooltipText="WPF UI Gallery">
             <tray:NotifyIcon.Menu>
-                <ContextMenu ItemsSource="{Binding ViewModel.TrayMenuItems, Mode=OneWay}" />
+                <ContextMenu ItemsSource="{Binding TrayMenuItems, Mode=OneWay}" />
             </tray:NotifyIcon.Menu>
         </tray:NotifyIcon>
     </Grid>
