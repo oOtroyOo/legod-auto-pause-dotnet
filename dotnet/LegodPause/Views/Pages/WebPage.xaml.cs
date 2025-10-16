@@ -1,16 +1,18 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Input;
 using LegodPause;
 using Microsoft.Web.WebView2.Core;
-using Wpf.Ui.Controls;
 
 namespace LegodPause.Views.Pages;
 
 public partial class WebPage
 {
-    private const string leigodLoginUrl = "https://www.leigod.com/m/mlogin.html?region_code=1&language=zh_CN&platform=2";
+    private const string leigodLoginUrl = "https://www.leigod.com"; //"https://www.leigod.com/m/mlogin.html?region_code=1&language=zh_CN&platform=2";
 
     private const string UserAgent = "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36 EdgA/110.0.1587.63";
 
@@ -85,7 +87,7 @@ public partial class WebPage
                 appWindow.Hide();
                 if (WebView.CoreWebView2 != null)
                 {
-                    await ClearAutofillData();
+                    await ClearCache();
                 }
 
                 // 清理完成，关闭窗口
@@ -99,12 +101,15 @@ public partial class WebPage
     {
         if (WebView?.IsInitialized == true)
         {
-            await ClearAutofillData();
+            await ClearCache();
         }
     }
 
+
+    private string[] whiteListDir = ["\\Local Storage\\"];
+
     // Clears autofill data.
-    private async Task ClearAutofillData()
+    private async Task ClearCache()
     {
         CoreWebView2Profile profile;
         if (WebView.CoreWebView2 != null)
@@ -119,7 +124,93 @@ public partial class WebPage
                  CoreWebView2BrowsingDataKinds.ServiceWorkers
                 );
             await profile.ClearBrowsingDataAsync(dataKinds);
-            Console.WriteLine();
+            try
+            {
+                var browerProcess = Process.GetProcessById((int)WebView.CoreWebView2.BrowserProcessId);
+                WebView.Dispose();
+                browerProcess.WaitForExit();
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine(exception);
+            }
+
+            var dirName = Process.GetCurrentProcess().MainModule.FileName + ".WebView2";
+            if (Directory.Exists(dirName))
+            {
+                var allFiles = Directory.GetFiles(dirName, "*", SearchOption.AllDirectories);
+                var selectFiles = allFiles.Where(x => !whiteListDir.Any(x.Contains)).ToArray();
+                foreach (var fileName in selectFiles)
+                {
+                    try
+                    {
+                        File.Delete(fileName);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
+                }
+
+                var allDirs = Directory.GetDirectories(dirName, "*", SearchOption.AllDirectories).OrderByDescending(d => d.Split('\\').Length);
+                foreach (var folder in allDirs)
+                {
+                    if (Directory.GetFileSystemEntries(folder).Length == 0)
+                    {
+                        try
+                        {
+                            Directory.Delete(folder);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e);
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    private async Task PrintToken()
+    {
+        try
+        {
+            var result = (await WebView.ExecuteScriptAsync("localStorage.getItem('account_token')"))?.Trim('"');
+            var token = (await WebView.ExecuteScriptAsync("JSON.parse(localStorage.getItem('account_token')).account_token"))?.Trim('"');
+            if (!string.IsNullOrEmpty(token) && token != "null")
+            {
+                await this.Dispatcher.InvokeAsync(async () =>
+                {
+                    var messageBox = new MessageBox
+                    {
+                        Content = token,
+                        CloseButtonText = "复制"
+                    };
+                    var boxResult = await messageBox.ShowDialogAsync();
+                    Clipboard.SetDataObject(token);
+                });
+            }
+            else
+            {
+                await this.Dispatcher.InvokeAsync(async () =>
+                {
+                    var messageBox = new MessageBox
+                    {
+                        Content = "没有找到Token",
+                        CloseButtonText = "关闭"
+                    };
+                    var boxResult = await messageBox.ShowDialogAsync();
+                });
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+
+    private async void backTokenBtn_Click(object sender, RoutedEventArgs e)
+    {
+        await PrintToken();
     }
 }

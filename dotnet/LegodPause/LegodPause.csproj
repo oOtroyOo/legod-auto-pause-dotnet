@@ -25,7 +25,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Web.WebView2" Version="*" />
+        <PackageReference Include="Microsoft.Web.WebView2" Version="*"/>
+
         <PackageReference Include="WPF-UI.Tray" Version="*"/>
         <PackageReference Include="WPF-UI" Version="*"/>
     </ItemGroup>
@@ -42,7 +43,10 @@
 
 
     </ItemGroup>
-
+    
+<!--    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">-->
+<!--        <PackageReference Include="System.Text.Json" Version="4.7.2"/>-->
+<!--    </ItemGroup>-->
     <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
         <PackageReference Include="System.Text.Encoding.CodePages" Version="*"/>
     </ItemGroup>

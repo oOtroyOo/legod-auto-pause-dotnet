@@ -8,8 +8,8 @@
       xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
       Title="WebViewPage"
       d:DataContext="{Binding RelativeSource={RelativeSource Self}}"
-      d:DesignHeight="450"
-      d:DesignWidth="500"
+      d:DesignWidth="600"
+      d:DesignHeight="700"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -26,18 +26,20 @@
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <ui:Button Grid.Column="0" Margin="0,0,4,0"
                        IsEnabled="{Binding CanGoBack, ElementName=WebView}"
                        Icon="{ui:SymbolIcon ArrowCircleLeft48}"
-                       Click="backBtn_Click">
-            </ui:Button>
-            <ui:TextBox
-                x:Name="UrlText"
-                KeyDown="UrlText_OnKeyDown"
-                Grid.Column="1" Padding="0">
-            </ui:TextBox>
+                       Click="backBtn_Click" />
+            <ui:Button Grid.Column="1" Margin="0,0,4,0"
+                       Icon="{ui:SymbolIcon CommentCheckmark48}"
+                       Content="检查token"
+                       Click="backTokenBtn_Click" />
+            <ui:TextBox Grid.Column="2" Padding="0"
+                        x:Name="UrlText"
+                        KeyDown="UrlText_OnKeyDown" />
         </Grid>
 
         <wv2:WebView2 Grid.Row="1" Name="WebView"
