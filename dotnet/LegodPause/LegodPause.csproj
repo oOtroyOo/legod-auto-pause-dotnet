@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <TargetFramework>net48</TargetFramework>
+        <TargetFramework>net481</TargetFramework>
         <Version>0.0.1</Version>
         <UseWPF>true</UseWPF>
         <LangVersion>preview</LangVersion>

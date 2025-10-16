@@ -7,7 +7,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
 
-namespace LegodPause.Mvvm;
+namespace LegodPause;
 
 /// <summary>
 /// Interaction logic for App.xaml

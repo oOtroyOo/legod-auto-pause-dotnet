@@ -9,19 +9,27 @@
       Title="WebViewPage"
       d:DataContext="{Binding RelativeSource={RelativeSource Self}}"
       d:DesignHeight="450"
-      d:DesignWidth="800"
+      d:DesignWidth="500"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       mc:Ignorable="d">
+    <Grid>
 
-    <DockPanel>
-        <Grid DockPanel.Dock="Top">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <ui:Button Grid.Column="0" Margin="0,0,4,0"
+                       IsEnabled="{Binding CanGoBack, ElementName=WebView}"
                        Icon="{ui:SymbolIcon ArrowCircleLeft48}"
                        Click="backBtn_Click">
             </ui:Button>
@@ -32,10 +40,15 @@
             </ui:TextBox>
         </Grid>
 
-        <wv2:WebView2 Name="WebView"
+        <wv2:WebView2 Grid.Row="1" Name="WebView"
                       NavigationStarting="WebView_OnNavigationStarting"
+                      NavigationCompleted="WebView_OnNavigationCompleted"
                       CoreWebView2InitializationCompleted="WebView_CoreWebView2InitializationCompleted"
                       Source="https://www.baidu.com" />
+        <ProgressBar Name="ProgressBar"
+                     Grid.Row="2"
+                     IsIndeterminate="True" />
+    </Grid>
 
-    </DockPanel>
+
 </Page>

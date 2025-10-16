@@ -10,10 +10,11 @@
     xmlns:tray="http://schemas.lepo.co/wpfui/2022/xaml/tray"
     DataContext="{Binding RelativeSource={RelativeSource Self}}"
     Title="WPF UI - Console Demo"
-    Width="1200"
+    Width="500"
     Height="654"
     d:DesignHeight="650"
     d:DesignWidth="900"
+    Closing="MainView_OnClosing"
     ExtendsContentIntoTitleBar="True"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
@@ -30,7 +31,10 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <ui:NavigationView x:Name="RootNavigation" Grid.Row="1" IsBackButtonVisible="Collapsed">
+        <ui:NavigationView x:Name="RootNavigation" Grid.Row="1"
+                           PaneDisplayMode="Left"
+                           IsPaneOpen="False"
+                           IsBackButtonVisible="Collapsed">
             <!-- <ui:NavigationView.AutoSuggestBox> -->
             <!--     <ui:AutoSuggestBox x:Name="AutoSuggestBox" PlaceholderText="Search"> -->
             <!--         <ui:AutoSuggestBox.Icon> -->
@@ -40,12 +44,12 @@
             <!--         </ui:AutoSuggestBox.Icon> -->
             <!--     </ui:AutoSuggestBox> -->
             <!-- </ui:NavigationView.AutoSuggestBox> -->
-            <ui:NavigationView.Header>
-                <ui:BreadcrumbBar
-                    Margin="42,32,0,0"
-                    FontSize="28"
-                    FontWeight="DemiBold" />
-            </ui:NavigationView.Header>
+            <!-- <ui:NavigationView.Header> -->
+            <!--     <ui:BreadcrumbBar -->
+            <!--         Margin="42,32,0,0" -->
+            <!--         FontSize="28" -->
+            <!--         FontWeight="DemiBold" /> -->
+            <!-- </ui:NavigationView.Header> -->
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem
                     Content="Dashboard"
@@ -80,6 +84,7 @@
 
         <tray:NotifyIcon
             Grid.Row="0"
+            Name="TrayIcon"
             FocusOnLeftClick="True"
             Icon="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=Icon}"
             MenuOnRightClick="True"

@@ -3,8 +3,10 @@
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
 
+using System.ComponentModel;
 using LegodPause.Utilities;
 using LegodPause.Views.Pages;
+using Microsoft.Web.WebView2.Core;
 
 namespace LegodPause.Views;
 
@@ -25,5 +27,10 @@ public partial class MainView
         UiApplication.Current.MainWindow = this;
 
         this.ApplyTheme();
+    }
+
+    private void MainView_OnClosing(object sender, CancelEventArgs e)
+    {
+        TrayIcon.Dispose();
     }
 }
