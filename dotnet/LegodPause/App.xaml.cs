@@ -15,7 +15,7 @@ namespace LegodPause;
 public partial class App
 {
     [DllImport("Kernel32.dll")]
-    public static extern bool AttachConsole(int processId);
+    private static extern bool AttachConsole(int processId);
 
 
     public static App CurrentApp => (App)Current;
@@ -23,7 +23,7 @@ public partial class App
     /// <summary>
     /// Occurs when the application is loading.
     /// </summary>
-    private async void OnStartup(object sender, StartupEventArgs e)
+    private void OnStartup(object sender, StartupEventArgs e)
     {
 #if NETCOREAPP
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -34,7 +34,7 @@ public partial class App
     /// <summary>
     /// Occurs when the application is closing.
     /// </summary>
-    private async void OnExit(object sender, ExitEventArgs e)
+    private void OnExit(object sender, ExitEventArgs e)
     {
     }
 

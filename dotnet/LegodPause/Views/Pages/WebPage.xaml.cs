@@ -12,7 +12,7 @@ namespace LegodPause.Views.Pages;
 
 public partial class WebPage
 {
-    private const string leigodLoginUrl = "https://www.leigod.com"; //"https://www.leigod.com/m/mlogin.html?region_code=1&language=zh_CN&platform=2";
+    private const string leigodLoginUrl = "https://www.leigod.com/m/mlogin.html?region_code=1&language=zh_CN&platform=2";
 
     private const string UserAgent = "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36 EdgA/110.0.1587.63";
 
@@ -171,7 +171,7 @@ public partial class WebPage
         }
     }
 
-    private async Task PrintToken()
+    private async Task PrintToken(bool showMsg = true)
     {
         try
         {
@@ -184,7 +184,8 @@ public partial class WebPage
                     var messageBox = new MessageBox
                     {
                         Content = token,
-                        CloseButtonText = "复制"
+                        CloseButtonText = "复制", 
+                        Title = "登录成功"
                     };
                     var boxResult = await messageBox.ShowDialogAsync();
                     Clipboard.SetDataObject(token);

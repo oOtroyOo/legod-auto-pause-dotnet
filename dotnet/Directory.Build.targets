@@ -1,0 +1,12 @@
+<Project>
+    <PropertyGroup>
+
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="$(SolutionDir)..\config.ini">
+            <Link>config.ini</Link>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
+    </ItemGroup>
+</Project>

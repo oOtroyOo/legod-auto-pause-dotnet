@@ -34,14 +34,8 @@ public static class ThemeUtilities
             ApplicationThemeManager.Changed += themeChanged;
         }
 
-        frameworkElement.Loaded += (s, e) =>
-        {
-            ApplicationThemeManager.Changed += themeChanged;
-        };
-        frameworkElement.Unloaded += (s, e) =>
-        {
-            ApplicationThemeManager.Changed -= themeChanged;
-        };
+        frameworkElement.Loaded += (s, e) => { ApplicationThemeManager.Changed += themeChanged; };
+        frameworkElement.Unloaded += (s, e) => { ApplicationThemeManager.Changed -= themeChanged; };
 
 #if DEBUG
         if (frameworkElement is Window window)
@@ -49,6 +43,7 @@ public static class ThemeUtilities
             window.KeyDown += (s, e) =>
             {
                 return;
+#pragma warning disable CS0162 // Unreachable code detected
                 if (e.Key == System.Windows.Input.Key.T)
                 {
                     ChangeTheme();
@@ -74,6 +69,7 @@ public static class ThemeUtilities
                     ApplicationThemeManager.Apply(applicationTheme, updateAccent: false);
                     ApplicationThemeManager.Apply(current, updateAccent: false);
                 }
+#pragma warning restore CS0162 // Unreachable code detected
             };
         }
 #endif
