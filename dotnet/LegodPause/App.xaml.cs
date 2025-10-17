@@ -6,6 +6,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
+using LegodPause.Service;
 
 namespace LegodPause;
 
@@ -25,7 +26,7 @@ public partial class App
     /// </summary>
     private void OnStartup(object sender, StartupEventArgs e)
     {
-#if NETCOREAPP
+#if !NETFRAMEWORK
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif
         AttachConsole(-1);

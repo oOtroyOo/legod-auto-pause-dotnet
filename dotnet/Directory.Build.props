@@ -1,17 +1,19 @@
 <Project>
     <PropertyGroup>
-        <TargetFramework>net481</TargetFramework>
         <Version>0.0.1</Version>
         <LangVersion>preview</LangVersion>
         <Nullable>enable</Nullable>
-        <UseWPF>true</UseWPF>
-
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <DebugType>none</DebugType>
         <DebugSymbols>false</DebugSymbols>
     </PropertyGroup>
-    <ItemGroup>
 
+    <ItemGroup>
+        <Content Include="$(SolutionDir)..\config.ini">
+            <Link>config.ini</Link>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
     </ItemGroup>
+
 </Project>

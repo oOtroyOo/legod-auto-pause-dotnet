@@ -2,14 +2,14 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LegodPause", "LegodPause\LegodPause.csproj", "{5A22B7A9-9644-40E9-87A9-4F405B8288D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LegodPause.Service", "LegodPause.Service\LegodPause.Service.csproj", "{309F07A8-C650-43D0-A936-57293BE1D52A}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder", "SolutionFolder", "{3E29673F-CE3B-420D-A4CF-7F0B67D6D75B}"
 	ProjectSection(SolutionItems) = preProject
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
 		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LegodPause.Service", "LegodPause.Service\LegodPause.Service.csproj", "{B5ED1AEC-03C6-4389-833A-83124938DEA2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,9 +21,9 @@ Global
 		{5A22B7A9-9644-40E9-87A9-4F405B8288D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A22B7A9-9644-40E9-87A9-4F405B8288D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5A22B7A9-9644-40E9-87A9-4F405B8288D7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{309F07A8-C650-43D0-A936-57293BE1D52A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{309F07A8-C650-43D0-A936-57293BE1D52A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{309F07A8-C650-43D0-A936-57293BE1D52A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{309F07A8-C650-43D0-A936-57293BE1D52A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5ED1AEC-03C6-4389-833A-83124938DEA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5ED1AEC-03C6-4389-833A-83124938DEA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5ED1AEC-03C6-4389-833A-83124938DEA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5ED1AEC-03C6-4389-833A-83124938DEA2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

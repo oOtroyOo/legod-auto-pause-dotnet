@@ -10,10 +10,10 @@
         <PackageReference Include="NUnit3TestAdapter" Version="4.6.0"/>
 
         <Using Include="NUnit.Framework"/>
-
-
     </ItemGroup>
-    
+    <PropertyGroup>
+        <GenerateProgramFile>false</GenerateProgramFile>  <!-- Microsoft.NET.Test.Sdk 会带Main函数导致重复定义-->
+    </PropertyGroup>
     <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
         <PackageReference Include="System.Text.Encoding.CodePages" Version="*"/>
     </ItemGroup>
