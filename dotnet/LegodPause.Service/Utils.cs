@@ -29,7 +29,7 @@ public static class Utils
         {
             var process = new Process();
             process.StartInfo.FileName = "sc.exe";
-            process.StartInfo.Arguments = $"create {serviceName} binPath= \"{exePath}\"";
+            process.StartInfo.Arguments = $""" create {serviceName} binPath= "{exePath}"  """;
             process.StartInfo.Verb = "runas";
             process.StartInfo.UseShellExecute = true;
             process.Start();
@@ -47,20 +47,20 @@ public static class Utils
         try
         {
             // 1. 创建 systemd service 文件内容
-            string serviceContent = $@"
-[Unit]
-Description={serviceName}
-After=network.target
+            string serviceContent = $"""
+                                     [Unit]
+                                     Description={serviceName}
+                                     After=network.target
 
-[Service]
-Type=simple
-ExecStart={exePath}
-Restart=always
-User=root
+                                     [Service]
+                                     Type=simple
+                                     ExecStart={exePath}
+                                     Restart=always
+                                     User=root
 
-[Install]
-WantedBy=multi-user.target
-";
+                                     [Install]
+                                     WantedBy=multi-user.target
+                                     """;
             string serviceFile = $"/etc/systemd/system/{serviceName}.service";
 
             // 2. 写入 systemd 服务文件（需 root 权限）
@@ -69,7 +69,7 @@ WantedBy=multi-user.target
             // 3. 重新加载 systemd 并启动服务
             var process = new Process();
             process.StartInfo.FileName = "/bin/bash";
-            process.StartInfo.Arguments = $"-c \"systemctl daemon-reload && systemctl enable {serviceName} && systemctl start {serviceName}\"";
+            process.StartInfo.Arguments = $""" -c "systemctl daemon-reload && systemctl enable {serviceName} && systemctl start {serviceName}" """;
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.Start();
@@ -87,23 +87,25 @@ WantedBy=multi-user.target
     {
         try
         {
-            string plistContent = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
-<!DOCTYPE plist PUBLIC ""-//Apple//DTD PLIST 1.0//EN"" ""http://www.apple.com/DTDs/PropertyList-1.0.dtd"">
-<plist version=""1.0"">
-<dict>
-    <key>Label</key>
-    <string>{serviceName}</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>{exePath}</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-</dict>
-</plist>
-";
+            string plistContent = $"""
+                                   <?xml version="1.0" encoding="UTF-8"?>
+                                                                     
+                                   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+                                   <plist version="1.0">
+                                   <dict>
+                                       <key>Label</key>
+                                       <string>{serviceName}</string>
+                                       <key>ProgramArguments</key>
+                                       <array>
+                                           <string>{exePath}</string>
+                                       </array>
+                                       <key>RunAtLoad</key>
+                                       <true/>
+                                       <key>KeepAlive</key>
+                                       <true/>
+                                   </dict>
+                                   </plist>
+                                   """;
             string plistFile = $"/Library/LaunchDaemons/{serviceName}.plist";
             System.IO.File.WriteAllText(plistFile, plistContent);
 
