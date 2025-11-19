@@ -10,7 +10,12 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Windows.Controls;
+using LegodPause.Service;
 using LegodPause.Utilities;
+using Button = Wpf.Ui.Controls.Button;
+using TextBlock = Wpf.Ui.Controls.TextBlock;
+using Timer = System.Timers.Timer;
 
 namespace LegodPause.Views.Pages;
 
@@ -20,6 +25,10 @@ namespace LegodPause.Views.Pages;
 public partial class DashboardPage : INotifyPropertyChanged
 {
     public string InstallButtonText => LegodPause.Service.Utils.IsInstalled() ? "卸载服务" : "安装服务";
+    private bool _isRunning = false;
+    public string IsRunningText => IsRunning ? "运行中" : "未运行";
+    public bool IsRunning => _isRunning;
+
     private int _counter = 0;
 
     public DashboardPage()
@@ -34,6 +43,21 @@ public partial class DashboardPage : INotifyPropertyChanged
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        var timer = new Timer(1000);
+        timer.Elapsed += (s, e) => { this.Dispatcher.Invoke(UpdateTimer); };
+        timer.Start();
+        UpdateTimer();
+    }
+
+    void UpdateTimer()
+    {
+        _isRunning = LegodPause.Service.Utils.IsRunning();
+        if (!IsRunningText.Equals(this.RunningTextBlock.GetValue(TextBlock.TextProperty)))
+        {
+            this.OnPropertyChanged(nameof(IsRunningText));
+        }
+
+        this.RunButton.Visibility = (LegodPause.Service.Utils.IsInstalled() && !IsRunning) ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnBaseButtonClick(object sender, RoutedEventArgs e)
@@ -103,5 +127,11 @@ public partial class DashboardPage : INotifyPropertyChanged
         field = value;
         OnPropertyChanged(propertyName);
         return true;
+    }
+
+    private void RunButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        Utils.RunService();
+        UpdateTimer();
     }
 }

@@ -98,4 +98,24 @@ public partial class Utils
 
         return false;
     }
+
+    public static bool IsRunning(string serviceName = MainServiceName)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return IsRunningWindows(serviceName);
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            return IsRunningLinux(serviceName);
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            return IsRunningMac(serviceName);
+        }
+
+        return false;
+    }
 }

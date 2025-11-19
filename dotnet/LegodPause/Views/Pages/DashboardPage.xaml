@@ -19,15 +19,23 @@
     Loaded="OnLoaded"
     mc:Ignorable="d">
     <Page.Resources>
-        <ResourceDictionary Source="../../Properties/Style.xaml"></ResourceDictionary>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Page.Resources>
     <StackPanel>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-            <ui:Button x:Name="InstallButton" Content="{Binding InstallButtonText}" Click="InstallButton_OnClick">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+            <Label Content="系统服务状态：" VerticalAlignment="Center"></Label>
+            <ui:TextBlock x:Name="RunningTextBlock" Text="{Binding IsRunningText}" VerticalAlignment="Center" />
+            <ui:Button x:Name="RunButton" Content="启动服务" Click="RunButton_OnClick">
                 <ui:Button.Icon>
-                    <ui:ImageIcon Source="{Binding Source={x:Static Application.Current},Path=(app:App.UacImageSource).Value}"></ui:ImageIcon>
+                    <ui:ImageIcon Source="{Binding Source={x:Static Application.Current},Path=(app:App.UacImageSource).Value}" />
                 </ui:Button.Icon>
             </ui:Button>
+            <ui:Button x:Name="InstallButton" Content="{Binding InstallButtonText}" Click="InstallButton_OnClick">
+                <ui:Button.Icon>
+                    <ui:ImageIcon Source="{Binding Source={x:Static Application.Current},Path=(app:App.UacImageSource).Value}" />
+                </ui:Button.Icon>
+            </ui:Button>
+
         </StackPanel>
         <ui:Button
             Grid.Column="0"

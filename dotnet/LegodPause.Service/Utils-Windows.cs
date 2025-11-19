@@ -96,7 +96,7 @@ public partial class Utils
             {
                 Verb = "runas",
                 WorkingDirectory = Environment.CurrentDirectory,
-                UseShellExecute = false
+                UseShellExecute = true
             });
 
             process.WaitForExit();
@@ -157,6 +157,37 @@ public partial class Utils
         catch (Exception ex)
         {
             Console.WriteLine("运行失败: " + ex.Message);
+        }
+
+        return false;
+    }
+
+    private static bool IsRunningWindows(string serviceName)
+    {
+        try
+        {
+            var process = Process.Start(new ProcessStartInfo("sc.exe",
+                    $" query {serviceName}")
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    StandardOutputEncoding = Encoding.GetEncoding("gbk"),
+                    StandardErrorEncoding = Encoding.GetEncoding("gbk"),
+                }
+            );
+
+            process.WaitForExit();
+            var output = process.StandardOutput.ReadToEnd();
+            var error = process.StandardError.ReadToEnd();
+            Console.WriteLine($"code={process.ExitCode} out={output} err={error}");
+            
+            // 检查服务状态是否为 RUNNING
+            return process.ExitCode == 0 && output?.Contains("RUNNING") == true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Windows服务状态检查失败: " + ex.Message);
         }
 
         return false;

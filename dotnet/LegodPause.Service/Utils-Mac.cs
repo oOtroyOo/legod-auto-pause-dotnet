@@ -127,4 +127,34 @@ public partial class Utils
             return false;
         }
     }
+
+    private static bool IsRunningMac(string serviceName)
+    {
+        try
+        {
+            var process = Process.Start(new ProcessStartInfo("/bin/bash", $"""
+                                                                           -c "launchctl list | grep {serviceName} | head -1'"
+                                                                           """)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            });
+
+            process.WaitForExit();
+            var output = process.StandardOutput.ReadToEnd();
+            var error = process.StandardError.ReadToEnd();
+            Console.WriteLine($"code={process.ExitCode} out={output} err={error}");
+            
+            // 如果输出包含PID（数字），说明服务正在运行
+            // 如果输出包含"-"，说明服务已加载但未运行
+            return process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output) && output.Trim() != "-" && int.TryParse(output.Trim(), out _);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("macOS服务状态检查失败: " + ex.Message);
+        }
+
+        return false;
+    }
 }

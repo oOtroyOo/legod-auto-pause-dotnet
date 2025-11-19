@@ -12,8 +12,9 @@
             <ResourceDictionary.MergedDictionaries>
                 <ui:ThemesDictionary Theme="Unknown" />
                 <ui:ControlsDictionary />
+                <ResourceDictionary Source="../../Properties/Style.xaml"></ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
-       
+
     </Application.Resources>
 </Application>

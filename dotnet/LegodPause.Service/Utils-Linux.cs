@@ -138,4 +138,33 @@ public partial class Utils
             return false;
         }
     }
+
+    private static bool IsRunningLinux(string serviceName)
+    {
+        try
+        {
+            var process = Process.Start(new ProcessStartInfo("/bin/bash", $"""
+                                                                           -c "systemctl is-active {serviceName}"
+                                                                           """)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            });
+
+            process.WaitForExit();
+            var output = process.StandardOutput.ReadToEnd();
+            var error = process.StandardError.ReadToEnd();
+            Console.WriteLine($"code={process.ExitCode} out={output} err={error}");
+            
+            // systemctl is-active 返回 0 表示服务正在运行
+            return process.ExitCode == 0 && output?.Trim() == "active";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Linux服务状态检查失败: " + ex.Message);
+        }
+
+        return false;
+    }
 }
