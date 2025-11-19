@@ -5,6 +5,8 @@
 
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LegodPause.Service;
 
@@ -29,6 +31,7 @@ public partial class App
 #if !NETFRAMEWORK
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif
+        Console.WriteLine("欢迎");
         AttachConsole(-1);
     }
 
@@ -38,6 +41,35 @@ public partial class App
     private void OnExit(object sender, ExitEventArgs e)
     {
     }
+
+
+    /// <summary>
+    ///  使用UAC管理员盾牌图标
+    /// </summary>
+    public Lazy<ImageSource> UacImageSource { get; } = new Lazy<ImageSource>(() =>
+        {
+            // System.Windows.Forms.SystemInformation.SmallIconSize.Width
+            // (int) System.Windows.SystemParameters.SmallIconWidth
+            var image = ShellExtension.LoadImage(IntPtr.Zero, "#106", 1, (int)SystemParameters.SmallIconWidth,
+                (int)SystemParameters.SmallIconHeight, 0);
+            var _uacImageSource = Imaging.CreateBitmapSourceFromHIcon(image, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            return _uacImageSource;
+        }
+    );
+
+
+    public Lazy<ImageSource> CurrentExeIcon { get; } = new Lazy<ImageSource>(() =>
+    {
+        var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+        using (var icon = System.Drawing.Icon.ExtractAssociatedIcon(exePath))
+        {
+            var source = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(
+                icon.Handle,
+                Int32Rect.Empty,
+                BitmapSizeOptions.FromEmptyOptions());
+            return source;
+        }
+    });
 
     /// <summary>
     /// Occurs when an exception is thrown by an application but not handled.

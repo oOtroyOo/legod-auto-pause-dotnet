@@ -3,7 +3,7 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <UseWPF>true</UseWPF>
-        <TargetFramework>net481</TargetFramework>
+        <TargetFrameworks>net481;net9.0-windows</TargetFrameworks>
         <ApplicationIcon>$(ProjectDir)..\..\legod.ico</ApplicationIcon>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     </PropertyGroup>
@@ -33,6 +33,15 @@
         <AutoGen>True</AutoGen>
         <DependentUpon>Resources.resx</DependentUpon>
       </Compile>
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <Page Update="Properties\Style.xaml">
+        <Generator>MSBuild:Compile</Generator>
+        <XamlRuntime>Wpf</XamlRuntime>
+        <SubType>Designer</SubType>
+      </Page>
     </ItemGroup>
 
 

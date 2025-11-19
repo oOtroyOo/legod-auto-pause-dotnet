@@ -1,0 +1,22 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+
+    <Thickness x:Key="Margin1">4,2</Thickness>
+    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Margin" Value="{StaticResource Margin1}" />
+    </Style>
+    <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+        <Setter Property="Margin" Value="{StaticResource Margin1}" />
+    </Style>
+    <Style TargetType="Label" BasedOn="{StaticResource {x:Type Label}}">
+        <Setter Property="Margin" Value="{StaticResource Margin1}" />
+    </Style>
+    <Style TargetType="ui:TextBlock" BasedOn="{StaticResource {x:Type ui:TextBlock}}">
+        <Setter Property="Margin" Value="{StaticResource Margin1}" />
+    </Style>
+    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="Margin" Value="{StaticResource Margin1}" />
+    </Style>
+
+</ResourceDictionary>

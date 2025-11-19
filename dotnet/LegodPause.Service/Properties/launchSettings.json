@@ -1,0 +1,17 @@
+﻿{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "LegodPause.Service -install": {
+      "commandName": "Project",
+      "environmentVariables": {
+      },
+      "commandLineArgs": "--install"
+    },
+    "LegodPause.Service -unInstall": {
+      "commandName": "Project",
+      "environmentVariables": {
+      },
+      "commandLineArgs": "--uninstall"
+    }
+  }
+}

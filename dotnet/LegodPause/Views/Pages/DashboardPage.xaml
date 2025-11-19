@@ -6,6 +6,8 @@
     xmlns:local="clr-namespace:LegodPause.Views.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:app="clr-namespace:LegodPause"
+    xmlns:pages="clr-namespace:LegodPause.Views.Pages"
     Title="DashboardPage"
     d:DesignHeight="450"
     d:DesignWidth="800"
@@ -13,14 +15,20 @@
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False"
+    DataContext="{Binding RelativeSource={RelativeSource Self}}"
+    Loaded="OnLoaded"
     mc:Ignorable="d">
-
-    <Grid Margin="42" VerticalAlignment="Top">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
-
+    <Page.Resources>
+        <ResourceDictionary Source="../../Properties/Style.xaml"></ResourceDictionary>
+    </Page.Resources>
+    <StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+            <ui:Button x:Name="InstallButton" Content="{Binding InstallButtonText}" Click="InstallButton_OnClick">
+                <ui:Button.Icon>
+                    <ui:ImageIcon Source="{Binding Source={x:Static Application.Current},Path=(app:App.UacImageSource).Value}"></ui:ImageIcon>
+                </ui:Button.Icon>
+            </ui:Button>
+        </StackPanel>
         <ui:Button
             Grid.Column="0"
             Click="OnBaseButtonClick"
@@ -31,5 +39,5 @@
             Grid.Column="1"
             Margin="12,0,0,0"
             VerticalAlignment="Center" />
-    </Grid>
+    </StackPanel>
 </Page>
