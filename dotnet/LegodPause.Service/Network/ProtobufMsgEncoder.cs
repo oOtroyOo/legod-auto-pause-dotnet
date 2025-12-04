@@ -10,7 +10,6 @@ namespace LegodPause.Service.Network;
 public class ProtobufMsgEncoder
 {
     private readonly MemoryStream _serializeStream = new MemoryStream();
-    private readonly byte[] _intBuffer = new byte[4];
     private const int Hex = 0x12345678;
 
     public async Task<int> Encode<T>(PipeWriter writer, T msgObj)
@@ -18,19 +17,18 @@ public class ProtobufMsgEncoder
         try
         {
             ProtoBuf.Serializer.Serialize(_serializeStream, msgObj);
-            var bodyBuffer = new Span<byte>(_serializeStream.GetBuffer(), 0,  (int)_serializeStream.Position);
+            var bodyBuffer = new Span<byte>(_serializeStream.GetBuffer(), 0, (int)_serializeStream.Position);
             for (int i = 0; i < bodyBuffer.Length; i++)
             {
                 bodyBuffer[i] ^= (byte)(Hex >> (8 * (i % 4)));
             }
 
-            writer.Write(BitConverter.GetBytes(bodyBuffer.Length));
+            writer.Write(BitConverter.GetBytes(bodyBuffer.Length + 4));
 
             var crcValue = ChecksumUtil.Adler32(bodyBuffer);
             writer.Write(BitConverter.GetBytes(crcValue));
             writer.Write(bodyBuffer);
             // writer.Advance(bodyBuffer.Length + 8);
-
             return bodyBuffer.Length + 8;
         }
         finally
@@ -45,21 +43,33 @@ public class ProtobufMsgEncoder
         try
         {
             // Read message length (4 bytes)
-            var lengthResult = await reader.ReadAtLeastAsync(4);
-            if (lengthResult.IsCompleted || lengthResult.Buffer.Length < 4)
+            var readerResult = await reader.ReadAtLeastAsync(4);
+            if (readerResult.IsCompleted || readerResult.Buffer.Length < 4)
                 throw new InvalidDataException("Incomplete message length");
 
-            var length = BitConverter.ToUInt32(lengthResult.Buffer.Slice(0, 4).ToArray(), 0);
-            reader.AdvanceTo(lengthResult.Buffer.GetPosition(4));
+            var length =
+#if NETFRAMEWORK
+                BitConverter.ToInt32(readerResult.Buffer.Slice(0, 4).ToArray(), 0);
+#else
+                BitConverter.ToInt32(readerResult.Buffer.Slice(0, 4).FirstSpan);
+#endif
+            reader.AdvanceTo(readerResult.Buffer.GetPosition(4));
 
             // Read CRC (4 bytes) and message body
-            var bodyResult = await reader.ReadAtLeastAsync((int)length + 4);
-            if (bodyResult.IsCompleted || bodyResult.Buffer.Length < length + 4)
+            readerResult = await reader.ReadAtLeastAsync(length);
+            if (readerResult.IsCompleted || readerResult.Buffer.Length < length)
                 throw new InvalidDataException("Incomplete message body");
 
-            var crc = BitConverter.ToUInt32(bodyResult.Buffer.Slice(0, 4).ToArray(), 0);
-            var bodyBuffer = bodyResult.Buffer.Slice(4, (int)length).ToArray();
-            reader.AdvanceTo(bodyResult.Buffer.GetPosition(length + 4));
+            var crc =
+#if NETFRAMEWORK
+                BitConverter.ToInt32(readerResult.Buffer.Slice(0, 4).ToArray(), 0);
+#else
+                BitConverter.ToInt32(readerResult.Buffer.Slice(0, 4).FirstSpan);
+#endif
+            var bodyBuffer = new Span<byte>(new byte[length - 4]);
+            readerResult.Buffer.Slice(4, length - 4).CopyTo(bodyBuffer);
+
+            reader.AdvanceTo(readerResult.Buffer.GetPosition(length));
 
             // Verify checksum
             var calculatedCrc = ChecksumUtil.Adler32(bodyBuffer);
