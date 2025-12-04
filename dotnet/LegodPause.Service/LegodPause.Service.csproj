@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <InvariantGlobalization>true</InvariantGlobalization>
         <UserSecretsId>dotnet-WorkerService1-12213d12-a590-48ab-a209-1c9ec9239035</UserSecretsId>
+        <UseWindowsForms Condition="'$(TargetFramework)' == 'net481'">true</UseWindowsForms>
     </PropertyGroup>
 
     <Target Name="Test" AfterTargets="Build">
@@ -21,6 +22,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Hosting"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
+        <PackageReference Include="protobuf-net" />
     </ItemGroup>
 
     <ItemGroup>

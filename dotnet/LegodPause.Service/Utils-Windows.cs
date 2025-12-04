@@ -47,6 +47,17 @@ public partial class Utils
     {
         try
         {
+            var mmsProcess = Process.GetProcessesByName("mmc");
+            if (mmsProcess.Any())
+            {
+                Console.WriteLine("服务窗口 正在运行，请先关闭");
+#if NETFRAMEWORK
+                MessageBox.Show("服务窗口 正在运行，请先关闭后进行", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+#endif
+
+                return -3;
+            }
+
             if (IsInstalled())
             {
                 var process = Process.Start(new ProcessStartInfo("sc.exe", $" stop {serviceName}")
@@ -181,7 +192,7 @@ public partial class Utils
             var output = process.StandardOutput.ReadToEnd();
             var error = process.StandardError.ReadToEnd();
             Console.WriteLine($"code={process.ExitCode} out={output} err={error}");
-            
+
             // 检查服务状态是否为 RUNNING
             return process.ExitCode == 0 && output?.Contains("RUNNING") == true;
         }
