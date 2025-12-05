@@ -18,8 +18,14 @@ public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
     {
         try
         {
-            ProtoBuf.Serializer.Serialize(_serializeStream, msgObj);
-            var bodyBuffer = new Span<byte>(_serializeStream.GetBuffer(), 0, (int)_serializeStream.Position);
+            Span<byte> bodyBuffer;
+            lock (_serializeStream)
+            {
+                ProtoBuf.Serializer.Serialize(_serializeStream, msgObj);
+
+                bodyBuffer = new Span<byte>(_serializeStream.GetBuffer(), 0, (int)_serializeStream.Position);
+            }
+
             for (int i = 0; i < bodyBuffer.Length; i++)
             {
                 bodyBuffer[i] ^= (byte)(Hex >> (8 * (i % 4)));
@@ -35,7 +41,11 @@ public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
         }
         finally
         {
-            _serializeStream.SetLength(0);
+            lock (_serializeStream)
+            {
+                _serializeStream.SetLength(0);
+            }
+
             await writer.FlushAsync();
         }
     }
