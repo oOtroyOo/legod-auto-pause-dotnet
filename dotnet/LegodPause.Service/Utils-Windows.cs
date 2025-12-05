@@ -6,6 +6,33 @@ namespace LegodPause.Service;
 
 public partial class Utils
 {
+    [DllImport("kernel32.dll")]
+    public static extern uint GetOEMCP();
+
+    public static Encoding GetOEMEncoding()
+    {
+        uint oemCP = GetOEMCP();
+        return Encoding.GetEncoding((int)oemCP);
+    }
+
+    public static Encoding GetConsoleEncoding()
+    {
+        try
+        {
+            // 首先尝试获取控制台输出编码
+            if (Console.OutputEncoding != null)
+                return Console.OutputEncoding;
+
+            // 然后尝试获取系统默认编码
+            return Encoding.Default;
+        }
+        catch
+        {
+            // 如果都失败，回退到UTF-8
+            return Encoding.UTF8;
+        }
+    }
+
     private static int InstallWindowsService(string serviceName, string exePath)
     {
         try

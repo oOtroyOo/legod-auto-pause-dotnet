@@ -12,7 +12,7 @@ public class Program
 
     public static int Main(string[] args)
     {
-        Console.WriteLine("dir=" + Environment.CurrentDirectory);
+        AttachConsole(-1);
 #if NETCOREAPP
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif

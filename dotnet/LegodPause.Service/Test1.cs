@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
 using System.IO.Pipes;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
 using LegodPause.Service.Network;
 using LegodPause.Service.Proto;
@@ -17,6 +19,38 @@ namespace LegodPause.Service;
 [TestFixture]
 public class Test1
 {
+    public Test1()
+    {
+#if NETCOREAPP
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+#endif
+    }
+
+    [Test]
+    public void TestEncoding()
+    {
+        Console.WriteLine("OEMCP=" + Utils.GetOEMCP());
+        var oemEncoding = Utils.GetOEMEncoding();
+        Console.WriteLine($"OEMEncoding={oemEncoding} codePage={oemEncoding.CodePage} name=\"{oemEncoding.EncodingName}\" ");
+        var consoleEncoding = Utils.GetConsoleEncoding();
+        Console.WriteLine($"ConsoleEncoding={consoleEncoding} codePage={consoleEncoding.CodePage} name=\"{consoleEncoding.EncodingName}\"");
+        // cmd /c "exit"
+        var process = Process.Start(new ProcessStartInfo("sc.exe", $"""
+                                                                    qc 000
+                                                                    """)
+        {
+            Verb = "runas",
+            WorkingDirectory = Environment.CurrentDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            StandardOutputEncoding = consoleEncoding,
+        });
+        process.WaitForExit();
+        var output = process.StandardOutput.ReadToEnd();
+        Console.WriteLine(output);
+        Assert.That(output.Contains("指定的服务未安装"));
+    }
+
     [Test]
     public async Task TestBuffer()
     {
