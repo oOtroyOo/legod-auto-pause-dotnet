@@ -7,10 +7,12 @@ using System.Net;
 
 namespace LegodPause.Service.Network;
 
-public class ProtobufMsgEncoder
+public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
 {
     private readonly MemoryStream _serializeStream = new MemoryStream();
     private const int Hex = 0x12345678;
+    private ILogger<ProtobufMsgEncoder>? _logger = logger;
+
 
     public async Task<int> Encode<T>(PipeWriter writer, T msgObj)
     {

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using LegodPause.Service.Network;
 
 namespace LegodPause.Service;
 
@@ -40,6 +41,7 @@ public class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
         builder.Services.AddHostedService<Worker>();
+        builder.Services.AddSingleton<NetworkServer>();
         builder.Services.AddWindowsService();
         var host = builder.Build();
         host.Run();

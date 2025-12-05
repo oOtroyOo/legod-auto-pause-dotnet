@@ -1,14 +1,24 @@
 using System.Timers;
+using LegodPause.Service.Network;
+using LegodPause.Service.Proto;
 
 namespace LegodPause.Service;
 
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
+    private readonly NetworkServer _networkServer;
 
-    public Worker(ILogger<Worker> logger)
+    public Worker(ILogger<Worker> logger, NetworkServer networkServer)
     {
         _logger = logger;
+        _networkServer = networkServer;
+    }
+
+    public override async Task StartAsync(CancellationToken cancellationToken)
+    {
+        _networkServer.Start(cancellationToken);
+        await base.StartAsync(cancellationToken);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -19,6 +29,8 @@ public class Worker : BackgroundService
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
             }
+
+         
             await Task.Delay(1000, stoppingToken);
         }
     }
