@@ -28,6 +28,13 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Content Include="$(SolutionDir)..\config.ini"  Condition="Exists('$(SolutionDir)..\config.ini')">
+            <Link>config.ini</Link>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
         <EmbeddedResource Update="Resources.resx">
             <Generator>ResXFileCodeGenerator</Generator>
             <LastGenOutput>Resources.Designer.cs</LastGenOutput>

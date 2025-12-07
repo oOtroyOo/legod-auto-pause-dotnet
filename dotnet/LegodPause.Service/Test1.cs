@@ -29,6 +29,26 @@ public class Test1
     [Test]
     public void TestEncoding()
     {
+        /*
+         *
+繁体中文
+OEMCP=950
+OEMEncoding=System.Text.DBCSCodePageEncoding codePage=950 name="Chinese Traditional (Big5)"
+ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=950 name="Chinese Traditional (Big5)"
+
+简体中文
+OEMCP=936
+OEMEncoding=System.Text.DBCSCodePageEncoding codePage=936 name="Chinese Simplified (GB2312)"
+ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=936 name="Chinese Simplified (GB2312)"
+[SC] OpenService 失败 1060:
+
+日语
+OEMCP=932
+OEMEncoding=System.Text.DBCSCodePageEncoding codePage=932 name="日本語 (シフト JIS)"
+ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=932 name="日本語 (シフト JIS)"
+[SC] OpenService FAILED 1060:
+
+         */
         Console.WriteLine("OEMCP=" + Utils.GetOEMCP());
         var oemEncoding = Utils.GetOEMEncoding();
         Console.WriteLine($"OEMEncoding={oemEncoding} codePage={oemEncoding.CodePage} name=\"{oemEncoding.EncodingName}\" ");

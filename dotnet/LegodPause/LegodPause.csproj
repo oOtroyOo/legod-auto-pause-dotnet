@@ -45,7 +45,14 @@
     </ItemGroup>
 
 
-    
+
+
+    <ItemGroup>
+        <Content Include="$(SolutionDir)..\config.ini"  Condition="Exists('$(SolutionDir)..\config.ini')">
+            <Link>config.ini</Link>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
+    </ItemGroup>
 
 
     <Target Name="PostPublish" AfterTargets="Publish">
