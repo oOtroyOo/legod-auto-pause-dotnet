@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using LegodPause.Service.Network;
+using LegodPause.Service.Proto;
 
 namespace LegodPause.Service;
 
@@ -9,6 +10,8 @@ public class Program
 {
     [DllImport("Kernel32.dll")]
     private static extern bool AttachConsole(int processId);
+
+    public static IHost? AppHost;
 
     public static int Main(string[] args)
     {
@@ -27,23 +30,22 @@ public class Program
             return Utils.UnInstallService();
         }
 
-        BuildService(args);
-
-
+        BuildService(args)
+            .Run();
 #if NETFRAMEWORK
-
 #endif
         Console.ReadKey();
         return 0;
     }
 
-    private static void BuildService(string[] args)
+    private static IHost BuildService(string[] args)
     {
         var builder = Host.CreateApplicationBuilder(args);
         builder.Services.AddHostedService<Worker>();
         builder.Services.AddSingleton<NetworkServer>();
         builder.Services.AddWindowsService();
-        var host = builder.Build();
-        host.Run();
+        builder.Services.AddHttpClient();
+        AppHost = builder.Build();
+        return AppHost;
     }
 }

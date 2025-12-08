@@ -12,7 +12,8 @@ namespace LegodPause.Views.Pages;
 
 public partial class WebPage
 {
-    private const string leigodLoginUrl = "https://www.leigod.com/m/mlogin.html?region_code=1&language=zh_CN&platform=2";
+    private static Uri leigodLoginUrl = new Uri("https://www.leigod.com/m/mlogin.html?region_code=1&language=zh_CN&platform=2");
+    private static Uri leigodMemblerUrl = new Uri("https://www.leigod.com/m/mcenterList.html?region_code=1&language=zh_CN&platform=2");
 
     private const string UserAgent = "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36 EdgA/110.0.1587.63";
 
@@ -45,6 +46,14 @@ public partial class WebPage
     private void WebView_OnNavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
     {
         ProgressBar.Visibility = Visibility.Collapsed;
+        if (WebView.Source.LocalPath == leigodMemblerUrl.LocalPath)
+            GetToken().ContinueWith((t) =>
+            {
+                if (string.IsNullOrEmpty(t.Result))
+                {
+                    Dispatcher.Invoke(() => { WebView.Source = leigodLoginUrl; });
+                }
+            }, TaskContinuationOptions.OnlyOnRanToCompletion);
     }
 
     private void WebView_CoreWebView2InitializationCompleted(object sender, CoreWebView2InitializationCompletedEventArgs e)
@@ -58,7 +67,7 @@ public partial class WebPage
 
         WebView.CoreWebView2.WindowCloseRequested += CoreWebView2_WindowCloseRequested;
         WebView.CoreWebView2.Settings.UserAgent = UserAgent;
-        WebView.Source = new Uri(leigodLoginUrl);
+        WebView.Source = leigodMemblerUrl;
     }
 
     private void UrlText_OnKeyDown(object sender, KeyEventArgs e)
@@ -171,12 +180,18 @@ public partial class WebPage
         }
     }
 
+    private async Task<string> GetToken()
+    {
+        var result = (await WebView.ExecuteScriptAsync("localStorage.getItem('account_token')"))?.Trim('"');
+        var token = (await WebView.ExecuteScriptAsync("JSON.parse(localStorage.getItem('account_token')).account_token"))?.Trim('"');
+        return token;
+    }
+
     private async Task PrintToken(bool showMsg = true)
     {
         try
         {
-            var result = (await WebView.ExecuteScriptAsync("localStorage.getItem('account_token')"))?.Trim('"');
-            var token = (await WebView.ExecuteScriptAsync("JSON.parse(localStorage.getItem('account_token')).account_token"))?.Trim('"');
+            var token = await GetToken();
             if (!string.IsNullOrEmpty(token) && token != "null")
             {
                 await this.Dispatcher.InvokeAsync(async () =>
@@ -184,7 +199,7 @@ public partial class WebPage
                     var messageBox = new MessageBox
                     {
                         Content = token,
-                        CloseButtonText = "复制", 
+                        CloseButtonText = "复制",
                         Title = "登录成功"
                     };
                     var boxResult = await messageBox.ShowDialogAsync();

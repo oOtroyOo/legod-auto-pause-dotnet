@@ -12,7 +12,10 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using LegodPause.Service;
+using LegodPause.Service.Api;
+using LegodPause.Service.Proto;
 using LegodPause.Utilities;
+using Microsoft.Extensions.Configuration;
 using Button = Wpf.Ui.Controls.Button;
 using TextBlock = Wpf.Ui.Controls.TextBlock;
 using Timer = System.Timers.Timer;
@@ -29,7 +32,16 @@ public partial class DashboardPage : INotifyPropertyChanged
     public string IsRunningText => IsRunning ? "运行中" : "未运行";
     public bool IsRunning => _isRunning;
 
+    public string TokenStatusText
+    {
+        get => (string)GetValue(TokenStatusTextProperty);
+        set => SetValue(TokenStatusTextProperty, value);
+    }
+
     private int _counter = 0;
+
+    public static readonly DependencyProperty TokenStatusTextProperty =
+        DependencyProperty.Register(nameof(TokenStatusText), typeof(string), typeof(DashboardPage), new PropertyMetadata(default(string)));
 
     public DashboardPage()
     {
@@ -47,6 +59,13 @@ public partial class DashboardPage : INotifyPropertyChanged
         timer.Elapsed += (s, e) => { this.Dispatcher.Invoke(UpdateTimer); };
         timer.Start();
         UpdateTimer();
+        CheckToken();
+    }
+
+    private void CheckToken()
+    {
+        // var httpClient = HttpClientCreateFactory.Create();
+        Console.WriteLine(ConfigFile.GetValue<string>("games"));
     }
 
     void UpdateTimer()

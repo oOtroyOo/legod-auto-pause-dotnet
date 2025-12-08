@@ -37,6 +37,12 @@
             </ui:Button>
 
         </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+            <Label Content="Token状态：" VerticalAlignment="Center"></Label>
+            <ui:TextBlock x:Name="TokenStatusBlock" Text="{Binding TokenStatusText}" VerticalAlignment="Center" />
+          
+
+        </StackPanel>
         <ui:Button
             Grid.Column="0"
             Click="OnBaseButtonClick"

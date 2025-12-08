@@ -19,6 +19,7 @@ public class NetworkServer : IDisposable
     List<PipeChannel> tcpClients = new List<PipeChannel>();
     private readonly ILogger<Worker> _logger;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ConfigFile _config;
     private CancellationToken _cancellationToken;
     System.Threading.Timer? heartbeatTimer;
     private long _seq = 0;
@@ -29,6 +30,7 @@ public class NetworkServer : IDisposable
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
+        logger.LogInformation("games: {games}", ConfigFile.GetValue<string>("games"));
         _encoder = new ProtobufMsgEncoder(serviceProvider.GetService<ILogger<ProtobufMsgEncoder>>());
     }
 

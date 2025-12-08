@@ -46,7 +46,7 @@
                       NavigationStarting="WebView_OnNavigationStarting"
                       NavigationCompleted="WebView_OnNavigationCompleted"
                       CoreWebView2InitializationCompleted="WebView_CoreWebView2InitializationCompleted"
-                      Source="https://www.baidu.com" />
+                      Source="about:blank" />
         <ProgressBar Name="ProgressBar"
                      Grid.Row="2"
                      IsIndeterminate="True" />

@@ -7,9 +7,11 @@
   <ItemGroup>
     <PackageVersion Include="JetBrains.Profiler.Api" Version="1.4.10" />
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Ini" Version="9.0.10" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="9.0.10" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageVersion Include="NUnit" Version="4.2.2" />
     <PackageVersion Include="NUnit.Analyzers" Version="4.4.0" />
@@ -20,13 +22,13 @@
     <PackageVersion Include="protobuf-net.Core" Version="3.2.56" />
     <PackageVersion Include="WPF-UI.Tray" Version="4.0.3" />
     <PackageVersion Include="WPF-UI" Version="4.0.3" />
-    <PackageVersion Include="System.Text.Json" Version="9.0.11" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.10" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Text.Encoding.CodePages" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <PackageReference Include="System.Text.Json" />
+    <Reference Include="System.Text.Json" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
     <PackageReference Include="JetBrains.Profiler.Api" />
