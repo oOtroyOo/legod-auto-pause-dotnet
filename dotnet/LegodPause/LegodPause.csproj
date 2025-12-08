@@ -3,7 +3,7 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <UseWPF>true</UseWPF>
-        <TargetFrameworks>net481</TargetFrameworks>
+        <TargetFrameworks>net48</TargetFrameworks>
         <ApplicationIcon>$(ProjectDir)..\..\legod.ico</ApplicationIcon>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     </PropertyGroup>

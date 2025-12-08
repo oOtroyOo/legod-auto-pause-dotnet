@@ -3,4 +3,16 @@
 
     </PropertyGroup>
 
+    <Target Name="Test" BeforeTargets="BeforeBuild">
+        <Message Importance="High" Text="TargetFrameworks=$(TargetFrameworks)"/>
+        <Message Importance="High" Text="TargetFramework=$(TargetFramework)"/>
+        <Message Importance="High" Text="NET+ is beeing used" Condition="$(IsUnifiedNETVersion) == 'true'"/>
+        <Message Importance="High" Text="NETFramework is beeing used" Condition="$(IsUnifiedNETVersion) == 'false'"/>
+        <Message Importance="High" Text="TargetFrameworkIdentifier == $(TargetFrameworkIdentifier)"/>
+        <Message Importance="High" Text="'.NETCoreApp' == $(TargetFrameworkIdentifier)" Condition="$(TargetFrameworkIdentifier) == '.NETCoreApp'"/>
+        <Message Importance="High" Text="'.NETFramework' == $(TargetFrameworkIdentifier)" Condition="$(TargetFrameworkIdentifier) == '.NETFramework'"/>
+        <Message Importance="High" Text="'.NETCoreApp' != $(TargetFrameworkIdentifier)" Condition="$(TargetFrameworkIdentifier) != '.NETCoreApp'"/>
+        <Message Importance="High" Text="'.NETFramework' != $(TargetFrameworkIdentifier) = false" Condition="$(TargetFrameworkIdentifier) != '.NETFramework'"/>
+        <Message Importance="High" Text="PublishSingleFile = $(PublishSingleFile) "/>
+    </Target>
 </Project>
