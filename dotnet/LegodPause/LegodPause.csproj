@@ -6,6 +6,8 @@
         <TargetFrameworks>net48</TargetFrameworks>
         <ApplicationIcon>$(ProjectDir)..\..\legod.ico</ApplicationIcon>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <GenerateProgramFile>false</GenerateProgramFile>
+        <!-- Microsoft.NET.Test.Sdk 会带Main函数导致重复定义-->
     </PropertyGroup>
 
 
@@ -18,7 +20,12 @@
         
         <ProjectReference Include="../LegodPause.Service/LegodPause.Service.csproj"/>
     </ItemGroup>
-
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+        <Reference Include="System.Text.Encoding.CodePages"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+        <Reference Include="System.Text.Json"/>
+    </ItemGroup>
 
     <ItemGroup>
         <EmbeddedResource Update="Properties\Resources.resx">
@@ -58,4 +65,5 @@
     <Target Name="PostPublish" AfterTargets="Publish">
         <Delete Files="$(PublishDir)$(AssemblyName).exe.config"/>
     </Target>
+
 </Project>

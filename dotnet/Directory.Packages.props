@@ -1,42 +1,46 @@
 <Project>
-  <PropertyGroup>
-    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <GenerateProgramFile>false</GenerateProgramFile>
-    <!-- Microsoft.NET.Test.Sdk 会带Main函数导致重复定义-->
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageVersion Include="JetBrains.Profiler.Api" Version="1.4.10" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Ini" Version="9.0.10" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.10" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.10" />
-    <PackageVersion Include="Microsoft.Extensions.Http" Version="9.0.10" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-    <PackageVersion Include="NUnit" Version="4.2.2" />
-    <PackageVersion Include="NUnit.Analyzers" Version="4.4.0" />
-    <PackageVersion Include="NUnit3TestAdapter" Version="4.6.0" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
-    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.3595.46" />
-    <PackageVersion Include="protobuf-net" Version="3.2.56" />
-    <PackageVersion Include="protobuf-net.Core" Version="3.2.56" />
-    <PackageVersion Include="WPF-UI.Tray" Version="4.0.3" />
-    <PackageVersion Include="WPF-UI" Version="4.0.3" />
-    <PackageVersion Include="System.Text.Json" Version="9.0.10" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Text.Encoding.CodePages" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Reference Include="System.Text.Json" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <PackageReference Include="JetBrains.Profiler.Api" />
-    <PackageReference Include="coverlet.collector" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="NUnit" />
-    <PackageReference Include="NUnit.Analyzers" />
-    <PackageReference Include="NUnit3TestAdapter" />
-    <Using Include="NUnit.Framework" />
-  </ItemGroup>
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+
+
+<!--        <MauiVersion>9.0.111</MauiVersion> &lt;!&ndash; 请替换为你需要的版本 &ndash;&gt;-->
+        <NetVersion>9.0.10</NetVersion> <!-- 请替换为你需要的版本 -->
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageVersion Include="JetBrains.Profiler.Api" Version="1.4.10"/>
+        <PackageVersion Include="coverlet.collector" Version="6.0.2"/>
+        <PackageVersion Include="Microsoft.Extensions.Configuration.Ini" Version="$(NetVersion)"/>
+        <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="$(NetVersion)"/>
+        <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(NetVersion)"/>
+        <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="$(NetVersion)"/>
+        <PackageVersion Include="Microsoft.Extensions.Http" Version="$(NetVersion)"/>
+        <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0"/>
+        <PackageVersion Include="NUnit" Version="4.2.2"/>
+        <PackageVersion Include="NUnit.Analyzers" Version="4.4.0"/>
+        <PackageVersion Include="NUnit3TestAdapter" Version="4.6.0"/>
+        <PackageVersion Include="Microsoft.Extensions.Hosting" Version="$(NetVersion)"/>
+        <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.3595.46"/>
+        <PackageVersion Include="protobuf-net" Version="3.2.56"/>
+        <PackageVersion Include="protobuf-net.Core" Version="3.2.56"/>
+        <PackageVersion Include="WPF-UI.Tray" Version="4.0.3"/>
+        <PackageVersion Include="WPF-UI" Version="4.0.3"/>
+        <PackageVersion Include="System.Text.Json" Version="$(NetVersion)"/>
+        <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.3.2"/>
+        <PackageVersion Include="CommunityToolkit.Maui" Version="11.1.1"/>
+        <PackageVersion Include="Syncfusion.Maui.Toolkit" Version="1.0.6"/>
+        <PackageVersion Include="Microsoft.Maui.Controls" Version="$(MauiVersion)"/>
+        <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="$(NetVersion)"/>
+        <PackageVersion Include="System.IO.Pipelines"  Version="$(NetVersion)"/>
+        <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions"  Version="$(NetVersion)"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+        <PackageReference Include="JetBrains.Profiler.Api"/>
+        <PackageReference Include="coverlet.collector"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="NUnit"/>
+        <PackageReference Include="NUnit.Analyzers"/>
+        <PackageReference Include="NUnit3TestAdapter"/>
+        <Using Include="NUnit.Framework"/>
+    </ItemGroup>
 </Project>
