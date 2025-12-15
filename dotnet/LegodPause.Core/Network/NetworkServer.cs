@@ -3,34 +3,33 @@ using System.IO.Pipelines;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using LegodPause.Service.Base;
-using LegodPause.Service.Proto;
+using LegodPause.Core.Proto;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Timer = System.Timers.Timer;
 
-namespace LegodPause.Service.Network;
+namespace LegodPause.Core.Network;
 
 public class NetworkServer : IDisposable
 {
     public static int TcpPort = 8555;
-    public static int UdpPort = 8666;
+    public static int UdpPort = 8566;
     TcpListener _tcpListener;
 
     private PipeChannel? brodcastPipe = null;
     List<PipeChannel> tcpClients = new List<PipeChannel>();
-    private readonly ILogger<Worker> _logger;
+    private readonly ILogger<NetworkServer> _logger;
     private readonly IServiceProvider _serviceProvider;
-    private readonly ConfigFile _config;
     private CancellationToken _cancellationToken;
     System.Threading.Timer? heartbeatTimer;
     private long _seq = 0;
 
     ProtobufMsgEncoder _encoder;
 
-    public NetworkServer(ILogger<Worker> logger, IServiceProvider serviceProvider)
+    public NetworkServer(ILogger<NetworkServer> logger, IServiceProvider serviceProvider)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
-        logger.LogInformation("games: {games}", ConfigFile.GetValue<string>("games"));
         _encoder = new ProtobufMsgEncoder(serviceProvider.GetService<ILogger<ProtobufMsgEncoder>>());
     }
 

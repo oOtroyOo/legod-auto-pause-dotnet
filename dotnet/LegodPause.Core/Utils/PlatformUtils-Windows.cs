@@ -2,9 +2,9 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace LegodPause.Service;
+namespace LegodPause.Core;
 
-public partial class Utils
+public partial class PlatformUtils
 {
     [DllImport("kernel32.dll")]
     public static extern uint GetOEMCP();
@@ -79,8 +79,8 @@ public partial class Utils
             if (mmsProcess.Any())
             {
                 Console.WriteLine("服务窗口 正在运行，请先关闭");
-#if NETFRAMEWORK
-                MessageBox.Show("服务窗口 正在运行，请先关闭后进行", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+#if NETFRAMEWORK || WINDOWS
+                System.Windows.MessageBox.Show("服务窗口 正在运行，请先关闭后进行", "错误",  System.Windows.MessageBoxButton.OK,  System.Windows.MessageBoxImage.Error);
 #endif
 
                 return -3;

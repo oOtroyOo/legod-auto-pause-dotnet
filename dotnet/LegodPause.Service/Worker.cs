@@ -1,4 +1,5 @@
 using System.Timers;
+using LegodPause.Core.Network;
 using LegodPause.Service.Network;
 using LegodPause.Service.Proto;
 
@@ -30,7 +31,7 @@ public class Worker : BackgroundService
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
             }
 
-         
+
             await Task.Delay(1000, stoppingToken);
         }
     }

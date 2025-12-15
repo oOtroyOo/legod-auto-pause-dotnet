@@ -8,8 +8,6 @@ using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using LegodPause.Service;
-
 namespace LegodPause;
 
 /// <summary>

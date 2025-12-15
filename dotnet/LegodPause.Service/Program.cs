@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using LegodPause.Core;
+using LegodPause.Core.Network;
 using LegodPause.Service.Network;
 using LegodPause.Service.Proto;
 
@@ -22,12 +24,12 @@ public class Program
 
         if (Array.IndexOf(args, "-i") > -1 || Array.IndexOf(args, "--install") > -1)
         {
-            return Utils.InstallService();
+            return PlatformUtils.InstallService();
         }
 
         if (Array.IndexOf(args, "-u") > -1 || Array.IndexOf(args, "--uninstall") > -1)
         {
-            return Utils.UnInstallService();
+            return PlatformUtils.UnInstallService();
         }
 
         BuildService(args)

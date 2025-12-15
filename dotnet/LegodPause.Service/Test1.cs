@@ -9,6 +9,8 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using LegodPause.Core;
+using LegodPause.Core.Network;
 using LegodPause.Service.Network;
 using LegodPause.Service.Proto;
 
@@ -49,10 +51,10 @@ ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=932 name="日本語 (�
 [SC] OpenService FAILED 1060:
 
          */
-        Console.WriteLine("OEMCP=" + Utils.GetOEMCP());
-        var oemEncoding = Utils.GetOEMEncoding();
+        Console.WriteLine("OEMCP=" + PlatformUtils.GetOEMCP());
+        var oemEncoding = PlatformUtils.GetOEMEncoding();
         Console.WriteLine($"OEMEncoding={oemEncoding} codePage={oemEncoding.CodePage} name=\"{oemEncoding.EncodingName}\" ");
-        var consoleEncoding = Utils.GetConsoleEncoding();
+        var consoleEncoding = PlatformUtils.GetConsoleEncoding();
         Console.WriteLine($"ConsoleEncoding={consoleEncoding} codePage={consoleEncoding.CodePage} name=\"{consoleEncoding.EncodingName}\"");
         // cmd /c "exit"
         var process = Process.Start(new ProcessStartInfo("sc.exe", $"""
@@ -144,8 +146,17 @@ ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=932 name="日本語 (�
         using var channel = new PipeChannel(CancellationToken.None, null);
         channel.AddSocket(udpClient.Client);
         var protobufMsgEncoder = new ProtobufMsgEncoder(null);
-        var receiveResult = await protobufMsgEncoder.Decode<ProtoLib>(channel.Receive.Reader);
-        Console.WriteLine(receiveResult.Ping?.pingTime);
+        ProtoPing? protoPing = null;
+        do
+        {
+            var receiveResult = await protobufMsgEncoder.Decode<ProtoLib>(channel.Receive.Reader);
+            protoPing = receiveResult.Ping;
+            if (protoPing != null)
+            {
+                var date = DateTimeOffset.FromUnixTimeMilliseconds(protoPing.pingTime).ToLocalTime();
+                Console.WriteLine($"{protoPing.pingTime}={date:yyyy-MM-dd HH:mm:ss.fff}");
+            }
+        } while (protoPing is null);
     }
 
 

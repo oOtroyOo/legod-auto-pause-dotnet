@@ -4,8 +4,9 @@ using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
-namespace LegodPause.Service.Network;
+namespace LegodPause.Core.Network;
 
 public class PipeChannel : IDisposable
 {
@@ -65,9 +66,7 @@ public class PipeChannel : IDisposable
                 if (readResult.Buffer.Length > 0)
                 {
                     var buffers = readResult.Buffer.Slice(readResult.Buffer.Start, readResult.Buffer.End);
-#if NETFRAMEWORK
                     var segment = new ArraySegment<byte>(buffers.ToArray());
-#endif
 
                     Send.Reader.AdvanceTo(readResult.Buffer.End);
 
@@ -75,21 +74,18 @@ public class PipeChannel : IDisposable
                     logStr.AppendFormat("Send {0} bytes to:\n", buffers.Length);
                     foreach (var socket in _sockets)
                     {
-                        if (socket.Connected)
+                        try
                         {
-                            try
-                            {
 #if NETFRAMEWORK
                                 await socket.SendAsync(segment, SocketFlags.None);
 #else
-                                await socket.SendAsync(buffers.First, _token);
+                            await socket.SendAsync(segment, _token);
 #endif
-                                logStr.AppendFormat("{0}\n", socket.RemoteEndPoint);
-                            }
-                            catch (Exception e)
-                            {
-                                _logger?.LogError(e, "socket.SendAsync error");
-                            }
+                            logStr.AppendFormat("{0}\n", socket.RemoteEndPoint);
+                        }
+                        catch (Exception e)
+                        {
+                            _logger?.LogError(e, "socket.SendAsync error");
                         }
                     }
 

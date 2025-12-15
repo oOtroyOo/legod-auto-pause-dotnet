@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace LegodPause.Service;
+namespace LegodPause.Core;
 
-public partial class Utils
+public partial class PlatformUtils
 {
     private static int InstallLinuxService(string serviceName, string exePath)
     {

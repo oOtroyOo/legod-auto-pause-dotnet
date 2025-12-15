@@ -1,11 +1,13 @@
 ﻿using System.Buffers;
+using System.IO;
 using System.IO.Pipelines;
 using System.Net;
+using Microsoft.Extensions.Logging;
 
 #if True
 
 
-namespace LegodPause.Service.Network;
+namespace LegodPause.Core.Network;
 
 public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
 {

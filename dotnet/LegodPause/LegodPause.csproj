@@ -18,7 +18,16 @@
         <PackageReference Include="WPF-UI"/>
         <Reference Include="System.Net.Http"/>
         
-        <ProjectReference Include="../LegodPause.Service/LegodPause.Service.csproj"/>
+        <ProjectReference Include="../LegodPause.Core/LegodPause.Core.csproj"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+        <PackageReference Include="JetBrains.Profiler.Api"/>
+        <PackageReference Include="coverlet.collector"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="NUnit"/>
+        <PackageReference Include="NUnit.Analyzers"/>
+        <PackageReference Include="NUnit3TestAdapter"/>
+        <Using Include="NUnit.Framework"/>
     </ItemGroup>
     <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
         <Reference Include="System.Text.Encoding.CodePages"/>

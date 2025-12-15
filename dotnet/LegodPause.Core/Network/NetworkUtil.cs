@@ -2,7 +2,7 @@
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
-namespace LegodPause.Service.Network;
+namespace LegodPause.Core.Network;
 
 public class NetworkUtil
 {

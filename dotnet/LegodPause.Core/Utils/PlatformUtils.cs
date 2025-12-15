@@ -2,9 +2,9 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace LegodPause.Service;
+namespace LegodPause.Core;
 
-public partial class Utils
+public partial class PlatformUtils
 {
     public const string MainServiceName = "LegodPauseService";
 

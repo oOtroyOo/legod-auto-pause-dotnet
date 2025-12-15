@@ -9,6 +9,7 @@
         <Message Importance="High" Text="NET+ is beeing used" Condition="$(IsUnifiedNETVersion) == 'true'"/>
         <Message Importance="High" Text="NETFramework is beeing used" Condition="$(IsUnifiedNETVersion) == 'false'"/>
         <Message Importance="High" Text="TargetFrameworkIdentifier == $(TargetFrameworkIdentifier)"/>
+        <Message Importance="High" Text="TargetPlatformIdentifier == $(TargetPlatformIdentifier)"/>
         <Message Importance="High" Text="'.NETCoreApp' == $(TargetFrameworkIdentifier)" Condition="$(TargetFrameworkIdentifier) == '.NETCoreApp'"/>
         <Message Importance="High" Text="'.NETFramework' == $(TargetFrameworkIdentifier)" Condition="$(TargetFrameworkIdentifier) == '.NETFramework'"/>
         <Message Importance="High" Text="'.NETCoreApp' != $(TargetFrameworkIdentifier)" Condition="$(TargetFrameworkIdentifier) != '.NETCoreApp'"/>

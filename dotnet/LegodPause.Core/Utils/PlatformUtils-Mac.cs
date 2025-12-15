@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace LegodPause.Service;
+namespace LegodPause.Core;
 
-public partial class Utils
+public partial class PlatformUtils
 {
     private static int InstallMacService(string serviceName, string exePath)
     {

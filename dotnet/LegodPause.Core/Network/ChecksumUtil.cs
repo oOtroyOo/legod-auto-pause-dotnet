@@ -1,4 +1,4 @@
-namespace LegodPause.Service.Network;
+namespace LegodPause.Core.Network;
 
 public class ChecksumUtil
 {

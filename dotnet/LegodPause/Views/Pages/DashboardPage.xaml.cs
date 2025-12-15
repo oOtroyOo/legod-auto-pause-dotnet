@@ -11,9 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Controls;
-using LegodPause.Service;
-using LegodPause.Service.Api;
-using LegodPause.Service.Proto;
+using LegodPause.Core;
 using LegodPause.Utilities;
 using Microsoft.Extensions.Configuration;
 using Button = Wpf.Ui.Controls.Button;
@@ -27,7 +25,7 @@ namespace LegodPause.Views.Pages;
 /// </summary>
 public partial class DashboardPage : INotifyPropertyChanged
 {
-    public string InstallButtonText => LegodPause.Service.Utils.IsInstalled() ? "卸载服务" : "安装服务";
+    public string InstallButtonText => PlatformUtils.IsInstalled() ? "卸载服务" : "安装服务";
     private bool _isRunning = false;
     public string IsRunningText => IsRunning ? "运行中" : "未运行";
     public bool IsRunning => _isRunning;
@@ -65,18 +63,18 @@ public partial class DashboardPage : INotifyPropertyChanged
     private void CheckToken()
     {
         // var httpClient = HttpClientCreateFactory.Create();
-        Console.WriteLine(ConfigFile.GetValue<string>("games"));
+        // Console.WriteLine(ConfigFile.GetValue<string>("games"));
     }
 
     void UpdateTimer()
     {
-        _isRunning = LegodPause.Service.Utils.IsRunning();
-        if (!IsRunningText.Equals(this.RunningTextBlock.GetValue(TextBlock.TextProperty)))
+        _isRunning = PlatformUtils.IsRunning();
+        if (!IsRunningText.Equals(RunningTextBlock.GetValue(TextBlock.TextProperty)))
         {
-            this.OnPropertyChanged(nameof(IsRunningText));
+            OnPropertyChanged(nameof(IsRunningText));
         }
 
-        this.RunButton.Visibility = (LegodPause.Service.Utils.IsInstalled() && !IsRunning) ? Visibility.Visible : Visibility.Collapsed;
+        RunButton.Visibility = (PlatformUtils.IsInstalled() && !IsRunning) ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnBaseButtonClick(object sender, RoutedEventArgs e)
@@ -100,7 +98,7 @@ public partial class DashboardPage : INotifyPropertyChanged
         }
 
         this.InstallButton.IsEnabled = false;
-        var isInstalled = LegodPause.Service.Utils.IsInstalled();
+        var isInstalled = PlatformUtils.IsInstalled();
         Task.Run(async () =>
         {
             Process? process = Process.Start(new ProcessStartInfo(serviceExe, isInstalled ? "--uninstall" : "--install")
@@ -115,7 +113,7 @@ public partial class DashboardPage : INotifyPropertyChanged
             {
                 CancellationTokenSource tokenSource = new CancellationTokenSource();
                 tokenSource.CancelAfter(5000);
-                while (!tokenSource.IsCancellationRequested && (!isInstalled && !LegodPause.Service.Utils.IsInstalled()) || (isInstalled && LegodPause.Service.Utils.IsInstalled()))
+                while (!tokenSource.IsCancellationRequested && (!isInstalled && !PlatformUtils.IsInstalled()) || (isInstalled && PlatformUtils.IsInstalled()))
                 {
                     await Task.Delay(1, tokenSource.Token);
                 }
@@ -150,7 +148,7 @@ public partial class DashboardPage : INotifyPropertyChanged
 
     private void RunButton_OnClick(object sender, RoutedEventArgs e)
     {
-        Utils.RunService();
+        PlatformUtils.RunService();
         UpdateTimer();
     }
 }
