@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LegodPause.Core;
 using LegodPause.Core.Network;
-using LegodPause.Service.Network;
+using LegodPause.Core.Proto;
 using LegodPause.Service.Proto;
 
 namespace LegodPause.Service;
@@ -141,35 +141,37 @@ ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=932 name="日本語 (�
     [Test]
     public async Task TestUpdClient()
     {
-        var endpoint = new IPEndPoint(IPAddress.Any, NetworkServer.UdpPort);
-        using var udpClient = new UdpClient(endpoint);
-        using var channel = new PipeChannel(CancellationToken.None, null);
-        channel.AddSocket(udpClient.Client);
-        var protobufMsgEncoder = new ProtobufMsgEncoder(null);
-        ProtoPing? protoPing = null;
-        do
-        {
-            var receiveResult = await protobufMsgEncoder.Decode<ProtoLib>(channel.Receive.Reader);
-            protoPing = receiveResult.Ping;
-            if (protoPing != null)
-            {
-                var date = DateTimeOffset.FromUnixTimeMilliseconds(protoPing.pingTime).ToLocalTime();
-                Console.WriteLine($"{protoPing.pingTime}={date:yyyy-MM-dd HH:mm:ss.fff}");
-            }
-        } while (protoPing is null);
+        // var endpoint = new IPEndPoint(IPAddress.Any, NetworkServer.UdpPort);
+        // using var udpClient = new UdpClient(endpoint);
+        // using var channel = new PipeChannel(CancellationToken.None, null);
+        // UdpClientMessenger udpClientMessenger = new(udpClient);
+        // channel.AddReceive(udpClientMessenger);
+        // var protobufMsgEncoder = new ProtobufMsgEncoder(null);
+        // ProtoPing? protoPing = null;
+        // do
+        // {
+        //     var receiveResult = await protobufMsgEncoder.Decode<ProtoLib>(channel.ReceivePipe.Reader);
+        //     protoPing = receiveResult.Ping;
+        //     if (protoPing != null)
+        //     {
+        //         var date = DateTimeOffset.FromUnixTimeMilliseconds(protoPing.pingTime).ToLocalTime();
+        //         Console.WriteLine($"{protoPing.pingTime}={date:yyyy-MM-dd HH:mm:ss.fff}");
+        //     }
+        // } while (protoPing is null);
     }
 
 
     [Test]
     public async Task TestUpdClientV6()
     {
-        var endpoint = new IPEndPoint(IPAddress.IPv6Any, NetworkServer.UdpPort);
-        using var udpClient = new UdpClient(endpoint);
-        using var channel = new PipeChannel(CancellationToken.None, null);
-        channel.AddSocket(udpClient.Client);
-        var protobufMsgEncoder = new ProtobufMsgEncoder(null);
-        var receiveResult = await protobufMsgEncoder.Decode<ProtoLib>(channel.Receive.Reader);
-        Console.WriteLine(receiveResult.Ping?.pingTime);
+        // var endpoint = new IPEndPoint(IPAddress.IPv6Any, NetworkServer.UdpPort);
+        // using var udpClient = new UdpClient(endpoint);
+        // using var channel = new PipeChannel(CancellationToken.None, null);
+        // UdpClientMessenger udpClientMessenger = new(udpClient);
+        // channel.AddReceive(udpClientMessenger);
+        // var protobufMsgEncoder = new ProtobufMsgEncoder(null);
+        // var receiveResult = await protobufMsgEncoder.Decode<ProtoLib>(channel.ReceivePipe.Reader);
+        // Console.WriteLine(receiveResult.Ping?.pingTime);
     }
 }
 

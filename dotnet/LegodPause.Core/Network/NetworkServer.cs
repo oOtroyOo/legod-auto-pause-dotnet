@@ -17,7 +17,7 @@ public class NetworkServer : IDisposable
     TcpListener _tcpListener;
 
     private PipeChannel? brodcastPipe = null;
-    List<PipeChannel> tcpClients = new List<PipeChannel>();
+    List<TcpClientMessenger> tcpMessengers = new List<TcpClientMessenger>();
     private readonly ILogger<NetworkServer> _logger;
     private readonly IServiceProvider _serviceProvider;
     private CancellationToken _cancellationToken;
@@ -37,9 +37,7 @@ public class NetworkServer : IDisposable
     {
         _cancellationToken = cancellationToken;
         _cancellationToken.Register(Dispose);
-        InitBroadcast();
-        InitListener();
-        InitHeart();
+    
     }
 
     private void InitHeart()
@@ -55,7 +53,7 @@ public class NetworkServer : IDisposable
         _cancellationToken.Register(() => { heartbeatTimer?.Dispose(); });
     }
 
-    private void InitListener()
+    private void InitListener(IPipeReceiveHandle pipeReceiveHandle)
     {
         _tcpListener = new TcpListener(IPAddress.Any, TcpPort);
         _cancellationToken.Register(() => { _tcpListener?.Stop(); });
@@ -64,10 +62,14 @@ public class NetworkServer : IDisposable
             _tcpListener.Start();
             while (!_cancellationToken.IsCancellationRequested)
             {
-                var client = await _tcpListener.AcceptTcpClientAsync();
-                PipeChannel pipe = new PipeChannel(_cancellationToken, _serviceProvider.GetService<ILogger<PipeChannel>>());
-                tcpClients.Add(pipe);
-                pipe.AddSocket(client.Client);
+                var client = await _tcpListener.AcceptTcpClientAsync(
+#if !NETFRAMEWORK
+                    _cancellationToken
+#endif
+                );
+          
+                var tcpClientPipHandle = new TcpClientMessenger(client,_cancellationToken);
+                tcpMessengers.Add(tcpClientPipHandle);
             }
         }, _cancellationToken);
     }
@@ -87,7 +89,8 @@ public class NetworkServer : IDisposable
             try
             {
                 udpClient.Connect(endPoint);
-                brodcastPipe.AddSocket(udpClient.Client);
+                var udpClientMessenger = _serviceProvider.GetService<UdpClientMessenger>();
+                udpClientMessenger.RegisterSender(udpClient,brodcastPipe);
             }
             catch (Exception e)
             {
@@ -116,7 +119,7 @@ public class NetworkServer : IDisposable
             pack.Seq = _seq;
 
 
-            var length = await _encoder.Encode(brodcastPipe.Send.Writer, pack);
+            var length = await _encoder.Encode(brodcastPipe.SendPipe.Writer, pack);
             _logger.LogInformation("Encode Bradcast {length} bytes", length);
         }
         catch (Exception e)
@@ -127,7 +130,7 @@ public class NetworkServer : IDisposable
 
     private void Stop()
     {
-        foreach (var pipe in tcpClients)
+        foreach (var pipe in tcpMessengers)
         {
             try
             {

@@ -1,6 +1,5 @@
 using System.Timers;
 using LegodPause.Core.Network;
-using LegodPause.Service.Network;
 using LegodPause.Service.Proto;
 
 namespace LegodPause.Service;

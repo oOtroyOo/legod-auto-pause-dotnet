@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using LegodPause.Core;
 using LegodPause.Utilities;
-using Microsoft.Extensions.Configuration;
 using Button = Wpf.Ui.Controls.Button;
 using TextBlock = Wpf.Ui.Controls.TextBlock;
 using Timer = System.Timers.Timer;

@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using LegodPause.Core;
 using LegodPause.Core.Network;
-using LegodPause.Service.Network;
 using LegodPause.Service.Proto;
 
 namespace LegodPause.Service;
@@ -44,6 +43,7 @@ public class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
         builder.Services.AddHostedService<Worker>();
+        builder.Services.AddLegodPuseCore();
         builder.Services.AddSingleton<NetworkServer>();
         builder.Services.AddWindowsService();
         builder.Services.AddHttpClient();

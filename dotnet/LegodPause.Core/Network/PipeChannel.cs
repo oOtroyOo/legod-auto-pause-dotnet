@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 using Microsoft.Extensions.Logging;
 
@@ -12,10 +11,11 @@ public class PipeChannel : IDisposable
 {
     private readonly CancellationToken _token;
     private readonly ILogger<PipeChannel>? _logger;
+    
 
     private Pipe? _send;
 
-    public Pipe Send
+    public Pipe SendPipe
     {
         get
         {
@@ -31,7 +31,7 @@ public class PipeChannel : IDisposable
 
     private Pipe? _receive;
 
-    public Pipe Receive
+    public Pipe ReceivePipe
     {
         get
         {
@@ -45,7 +45,8 @@ public class PipeChannel : IDisposable
         }
     }
 
-    private readonly ConcurrentBag<Socket> _sockets = new();
+    private readonly ConcurrentBag<IPipSendHandle> _sendHandles = new();
+    private readonly ConcurrentBag<IPipeReceiveHandle> _receiveHandles = new();
 
 
     public PipeChannel(CancellationToken token, ILogger<PipeChannel>? logger)
@@ -61,27 +62,23 @@ public class PipeChannel : IDisposable
         {
             try
             {
-                var readResult = await Send.Reader.ReadAtLeastAsync(1, _token);
+                var readResult = await SendPipe.Reader.ReadAtLeastAsync(1, _token);
 
                 if (readResult.Buffer.Length > 0)
                 {
                     var buffers = readResult.Buffer.Slice(readResult.Buffer.Start, readResult.Buffer.End);
                     var segment = new ArraySegment<byte>(buffers.ToArray());
 
-                    Send.Reader.AdvanceTo(readResult.Buffer.End);
+                    SendPipe.Reader.AdvanceTo(readResult.Buffer.End);
 
                     StringBuilder logStr = new StringBuilder();
-                    logStr.AppendFormat("Send {0} bytes to:\n", buffers.Length);
-                    foreach (var socket in _sockets)
+                    logStr.AppendFormat("SendPipe {0} bytes to:\n", buffers.Length);
+                    foreach (var handle in _sendHandles)
                     {
                         try
                         {
-#if NETFRAMEWORK
-                                await socket.SendAsync(segment, SocketFlags.None);
-#else
-                            await socket.SendAsync(segment, _token);
-#endif
-                            logStr.AppendFormat("{0}\n", socket.RemoteEndPoint);
+                            await handle.SendBytesHandle(segment, _token);
+                            // logStr.AppendFormat("{0}\n", socket.RemoteEndPoint);
                         }
                         catch (Exception e)
                         {
@@ -100,7 +97,7 @@ public class PipeChannel : IDisposable
             }
             finally
             {
-                Send.Reader.CancelPendingRead();
+                SendPipe.Reader.CancelPendingRead();
             }
         }
     }
@@ -116,38 +113,21 @@ public class PipeChannel : IDisposable
         {
             try
             {
-                foreach (var socket in _sockets)
+                foreach (var handle in _receiveHandles)
                 {
-                    var socketArgs = new SocketAsyncEventArgs();
-                    TaskCompletionSource<int> completionSource = new TaskCompletionSource<int>();
+                    IPEndPoint remoteEndPoint = default;
+                    int read = await handle.ReceiveBytesHandle(buffer, _token);
+
+                    if (read > 0)
+                    {
+                        await ReceivePipe.Writer.WriteAsync(new ReadOnlyMemory<byte>(
 #if NETFRAMEWORK
-                    socketArgs.SetBuffer(buffer, 0, buffer.Length);
+                            buffer
 #else
-                    socketArgs.SetBuffer(buffer);
+                            buffer.ToArray()
 #endif
-                    if (socket.ProtocolType == ProtocolType.Udp)
-                    {
-                        socketArgs.RemoteEndPoint = new IPEndPoint(((IPEndPoint)socket.LocalEndPoint).Address, 0);
-                    }
-                    else if (socket.ProtocolType == ProtocolType.Tcp)
-                    {
-                        if (!socket.Connected)
-                        {
-                            continue;
-                        }
-                    }
-
-                    socketArgs.Completed += (sender, e) => { completionSource.TrySetResult(socketArgs.BytesTransferred); };
-
-                    var received = socket.ReceiveFromAsync(socketArgs);
-                    if (received)
-                    {
-                        await completionSource.Task;
-                        if (socketArgs.Count > 0)
-                        {
-                            await Receive.Writer.WriteAsync(new ReadOnlyMemory<byte>(socketArgs.Buffer, 0, socketArgs.BytesTransferred), _token);
-                            _logger?.LogInformation("Received {0} bytes from {1}", socketArgs.BytesTransferred, socketArgs.RemoteEndPoint);
-                        }
+                            , 0, read), _token);
+                        _logger?.LogInformation("Received {0} bytes from {1}", read, remoteEndPoint);
                     }
                 }
 
@@ -159,21 +139,20 @@ public class PipeChannel : IDisposable
             }
             finally
             {
-                Receive.Writer.CancelPendingFlush();
+                ReceivePipe.Writer.CancelPendingFlush();
             }
         }
     }
 
-    public void AddSocket(Socket socket)
+    public void AddReceive(IPipeReceiveHandle handle)
     {
-        // if (_sockets.TryRemove(socket.RemoteEndPoint, out var s))
-        // {
-        //     s.Dispose();
-        // }
-
-        _sockets.Add(socket);
+        _receiveHandles.Add(handle);
     }
 
+    public void AddSend(IPipSendHandle handle)
+    {
+        _sendHandles.Add(handle);
+    }
 
     public void Dispose()
     {
@@ -189,24 +168,6 @@ public class PipeChannel : IDisposable
             _receive.Writer.Complete();
             _receive.Reader.Complete();
             _receive.Reset();
-        }
-
-        lock (_sockets)
-        {
-            while (_sockets.Count > 0)
-            {
-                if (_sockets.TryTake(out var socket))
-                {
-                    try
-                    {
-                        socket.Dispose();
-                    }
-                    catch (Exception e)
-                    {
-                        _logger?.LogError(e, "socket.Dispose error");
-                    }
-                }
-            }
         }
     }
 }

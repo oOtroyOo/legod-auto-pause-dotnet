@@ -4,11 +4,13 @@
     <!--        <MauiVersion>9.0.111</MauiVersion> &lt;!&ndash; 请替换为你需要的版本 &ndash;&gt;-->
     <NetVersion>9.0.10</NetVersion>
     <!-- 请替换为你需要的版本 -->
-    <AvaloniaV>11.3.9</AvaloniaV>
+    <AvaloniaVer>11.3.9</AvaloniaVer>
+    <TouchSocketVer>4.0.7</TouchSocketVer>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="JetBrains.Profiler.Api" Version="1.4.10" />
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="$(NetVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Ini" Version="$(NetVersion)" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="$(NetVersion)" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(NetVersion)" />
@@ -23,6 +25,14 @@
     <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.3595.46" />
     <PackageVersion Include="protobuf-net" Version="3.2.56" />
     <PackageVersion Include="protobuf-net.Core" Version="3.2.56" />
+    <PackageVersion Include="TouchSocket" Version="$(TouchSocketVer)" />
+    <PackageVersion Include="TouchSocket.Rpc" Version="$(TouchSocketVer)" />
+    <PackageVersion Include="TouchSocket.Core" Version="$(TouchSocketVer)" />
+    <PackageVersion Include="TouchSocket.AspNetCore" Version="$(TouchSocketVer)" />
+    <PackageVersion Include="TouchSocket.Hosting" Version="$(TouchSocketVer)" />
+    <PackageVersion Include="TouchSocket.Pipelines" Version="$(TouchSocketVer)" />
+    <PackageVersion Include="TouchSocket.Http" Version="$(TouchSocketVer)" />
+    <PackageVersion Include="TouchSocket.WebApi" Version="$(TouchSocketVer)" />
     <PackageVersion Include="WPF-UI.Tray" Version="4.0.3" />
     <PackageVersion Include="WPF-UI" Version="4.0.3" />
     <PackageVersion Include="System.Text.Json" Version="$(NetVersion)" />
@@ -37,14 +47,14 @@
   <ItemGroup>
     <!-- Avalonia packages -->
     <!-- Important: keep version in sync! -->
-    <PackageVersion Include="Avalonia" Version="$(AvaloniaV)" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(AvaloniaV)" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="$(AvaloniaV)" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="$(AvaloniaV)" />
-    <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaV)" />
-    <PackageVersion Include="Avalonia.iOS" Version="$(AvaloniaV)" />
-    <PackageVersion Include="Avalonia.Browser" Version="$(AvaloniaV)" />
-    <PackageVersion Include="Avalonia.Android" Version="$(AvaloniaV)" />
+    <PackageVersion Include="Avalonia" Version="$(AvaloniaVer)" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVer)" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVer)" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="$(AvaloniaVer)" />
+    <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVer)" />
+    <PackageVersion Include="Avalonia.iOS" Version="$(AvaloniaVer)" />
+    <PackageVersion Include="Avalonia.Browser" Version="$(AvaloniaVer)" />
+    <PackageVersion Include="Avalonia.Android" Version="$(AvaloniaVer)" />
     <PackageVersion Include="Xamarin.AndroidX.Core.SplashScreen" Version="1.0.1.15" />
   </ItemGroup>
 </Project>

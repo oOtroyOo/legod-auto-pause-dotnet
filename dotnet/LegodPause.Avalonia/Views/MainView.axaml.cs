@@ -38,28 +38,29 @@ public partial class MainView : UserControl
 
     private async Task Run()
     {
-        var endpoint = new IPEndPoint(IPAddress.Any, NetworkServer.UdpPort);
-        udpClient = new UdpClient(endpoint);
-        channel = new PipeChannel(CancellationToken.None, null);
-        channel.AddSocket(udpClient.Client);
-        var protobufMsgEncoder = new ProtobufMsgEncoder(null);
-        try
-        {
-            while (true)
-            {
-                var receiveResult = await protobufMsgEncoder.Decode<ProtoLib>(channel.Receive.Reader);
-                if (receiveResult.Ping != null)
-                {
-                    var pingTime = DateTimeOffset.FromUnixTimeMilliseconds(receiveResult.Ping.pingTime);
-                    Model.Greeting = pingTime.ToString("yyyy-MM-dd HH:mm:ss");
-                    Logger.Sink.Log(LogEventLevel.Information, Model.Greeting, null, null);
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Logger.Sink.Log(LogEventLevel.Error, e.Message, e, null);
-            throw;
-        }
+        // var endpoint = new IPEndPoint(IPAddress.Any, NetworkServer.UdpPort);
+        // udpClient = new UdpClient(endpoint);
+        // UdpClientPipHandle udpClientPipHandle = new(udpClient);
+        // channel = new PipeChannel(CancellationToken.None, null);
+        // channel.AddReceive(udpClientPipHandle);
+        // var protobufMsgEncoder = new ProtobufMsgEncoder(null);
+        // try
+        // {
+        //     while (true)
+        //     {
+        //         var receiveResult = await protobufMsgEncoder.Decode<ProtoLib>(channel.ReceivePipe.Reader);
+        //         if (receiveResult.Ping != null)
+        //         {
+        //             var pingTime = DateTimeOffset.FromUnixTimeMilliseconds(receiveResult.Ping.pingTime);
+        //             Model.Greeting = pingTime.ToString("yyyy-MM-dd HH:mm:ss");
+        //             Logger.Sink.Log(LogEventLevel.Information, Model.Greeting, null, null);
+        //         }
+        //     }
+        // }
+        // catch (Exception e)
+        // {
+        //     Logger.Sink.Log(LogEventLevel.Error, e.Message, e, null);
+        //     throw;
+        // }
     }
 }

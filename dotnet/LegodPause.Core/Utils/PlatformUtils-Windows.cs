@@ -79,7 +79,7 @@ public partial class PlatformUtils
             if (mmsProcess.Any())
             {
                 Console.WriteLine("服务窗口 正在运行，请先关闭");
-#if NETFRAMEWORK || WINDOWS
+#if NETFRAMEWORK
                 System.Windows.MessageBox.Show("服务窗口 正在运行，请先关闭后进行", "错误",  System.Windows.MessageBoxButton.OK,  System.Windows.MessageBoxImage.Error);
 #endif
 
