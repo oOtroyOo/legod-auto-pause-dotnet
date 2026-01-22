@@ -3,7 +3,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using LegodPause.Core;
 using LegodPause.Core.Network;
-using LegodPause.Service.Proto;
+using TouchSocket.Core;
+using TouchSocket.Sockets;
 
 namespace LegodPause.Service;
 
@@ -42,11 +43,12 @@ public class Program
     private static IHost BuildService(string[] args)
     {
         var builder = Host.CreateApplicationBuilder(args);
-        builder.Services.AddHostedService<Worker>();
+        builder.Services.AddServiceHostedService<IServiceBase, NetworkServer>(config =>
+        {
+            
+        });
         builder.Services.AddLegodPuseCore();
-        builder.Services.AddSingleton<NetworkServer>();
         builder.Services.AddWindowsService();
-        builder.Services.AddHttpClient();
         AppHost = builder.Build();
         return AppHost;
     }

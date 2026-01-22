@@ -17,7 +17,6 @@ namespace LegodPause.Avalonia.Views;
 public partial class MainView : UserControl
 {
     UdpClient? udpClient;
-    PipeChannel? channel;
     private MainViewModel Model => (MainViewModel)DataContext;
 
     public MainView()
@@ -32,7 +31,6 @@ public partial class MainView : UserControl
 
     private void Control_OnUnLoaded(object? sender, RoutedEventArgs e)
     {
-        channel?.Dispose();
         udpClient?.Dispose();
     }
 

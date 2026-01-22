@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using LegodPause.Core;
 using LegodPause.Core.Network;
 using LegodPause.Core.Proto;
-using LegodPause.Service.Proto;
+using TouchSocket.Core;
 
 namespace LegodPause.Service;
 
@@ -141,23 +141,44 @@ ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=932 name="日本語 (�
     [Test]
     public async Task TestUpdClient()
     {
-        // var endpoint = new IPEndPoint(IPAddress.Any, NetworkServer.UdpPort);
-        // using var udpClient = new UdpClient(endpoint);
-        // using var channel = new PipeChannel(CancellationToken.None, null);
-        // UdpClientMessenger udpClientMessenger = new(udpClient);
-        // channel.AddReceive(udpClientMessenger);
-        // var protobufMsgEncoder = new ProtobufMsgEncoder(null);
-        // ProtoPing? protoPing = null;
-        // do
-        // {
-        //     var receiveResult = await protobufMsgEncoder.Decode<ProtoLib>(channel.ReceivePipe.Reader);
-        //     protoPing = receiveResult.Ping;
-        //     if (protoPing != null)
-        //     {
-        //         var date = DateTimeOffset.FromUnixTimeMilliseconds(protoPing.pingTime).ToLocalTime();
-        //         Console.WriteLine($"{protoPing.pingTime}={date:yyyy-MM-dd HH:mm:ss.fff}");
-        //     }
-        // } while (protoPing is null);
+        // var aaa = new ProtoLib();
+        // Assert.That(aaa is ProtoLib);
+        // Console.WriteLine("Done");
+        // return;
+        using var udpSession = new TouchSocket.Sockets.UdpSession();
+        try
+        {
+            var packageAdapter = new ProtoPackageAdapter();
+            udpSession.SetupAsync(new TouchSocketConfig()
+                .SetUdpDataHandlingAdapter(() => new UdpProtoPackageAdapter(packageAdapter))
+                .SetBindIPHost(NetworkServer.UdpPort));
+
+            TaskCompletionSource<object> waitSource = new TaskCompletionSource<object>();
+            udpSession.Received += async (sender, e) =>
+            {
+                Console.WriteLine(e.EndPoint + ">" + e.RequestInfo);
+                waitSource.TrySetResult(e.RequestInfo);
+            };
+
+            await udpSession.StartAsync();
+
+            var result = await waitSource.Task;
+            Assert.That(result is ProtoLib);
+            var protoPing = ((ProtoLib)result).Ping;
+            if (protoPing != null)
+            {
+                var timeSeconds = DateTimeOffset.FromUnixTimeSeconds(protoPing.pingTime);
+                Console.WriteLine($"Done {timeSeconds.LocalDateTime}");
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+        finally
+        {
+            await udpSession?.StopAsync(CancellationToken.None);
+        }
     }
 
 

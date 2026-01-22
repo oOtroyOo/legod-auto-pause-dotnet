@@ -2,18 +2,20 @@
 using System.IO;
 using System.IO.Pipelines;
 using System.Net;
+using System.Text;
 using Microsoft.Extensions.Logging;
+using TouchSocket.Core;
+using TouchSocket.Sockets;
 
 #if True
 
 
 namespace LegodPause.Core.Network;
 
-public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
+public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder> logger) : PluginBase, ITcpReceivedPlugin, ITcpSendingPlugin
 {
     private readonly MemoryStream _serializeStream = new MemoryStream();
     private const int Hex = 0x12345678;
-    private ILogger<ProtobufMsgEncoder>? _logger = logger;
 
 
     public async Task<int> Encode<T>(PipeWriter writer, T msgObj)
@@ -101,6 +103,20 @@ public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
         finally
         {
         }
+    }
+
+    public async Task OnTcpReceived(ITcpSession client, ReceivedDataEventArgs e)
+    {
+        //从客户端收到信息
+        var mes = e.Memory.Span.ToString(Encoding.UTF8);
+
+
+        await e.InvokeNext();
+    }
+
+    public async Task OnTcpSending(ITcpSession client, SendingEventArgs e)
+    {
+        await e.InvokeNext();
     }
 }
 

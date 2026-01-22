@@ -3,144 +3,161 @@ using System.IO.Pipelines;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Text;
 using LegodPause.Core.Proto;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Timer = System.Timers.Timer;
+using TouchSocket.Core;
+using TouchSocket.Sockets;
+using Result = TouchSocket.Core.Result;
 
 namespace LegodPause.Core.Network;
 
-public class NetworkServer : IDisposable
+public class NetworkServer(ILogger<NetworkServer> logger, IServiceProvider serviceProvider, IConfigurationRoot localConfig) : ServiceBase, IDisposable
 {
     public static int TcpPort = 8555;
     public static int UdpPort = 8566;
-    TcpListener _tcpListener;
+    private UdpSession udpService;
+    private TcpService tcpService;
+    public override ServerState ServerState => tcpService.ServerState;
 
-    private PipeChannel? brodcastPipe = null;
-    List<TcpClientMessenger> tcpMessengers = new List<TcpClientMessenger>();
-    private readonly ILogger<NetworkServer> _logger;
-    private readonly IServiceProvider _serviceProvider;
-    private CancellationToken _cancellationToken;
-    System.Threading.Timer? heartbeatTimer;
-    private long _seq = 0;
+    private IConfigurationSection? localConfigSection = localConfig?.GetSection("config");
+    ProtoPackageAdapter packageAdapter = new ProtoPackageAdapter();
 
-    ProtobufMsgEncoder _encoder;
-
-    public NetworkServer(ILogger<NetworkServer> logger, IServiceProvider serviceProvider)
+    protected override void LoadConfig(TouchSocketConfig config)
     {
-        _logger = logger;
-        _serviceProvider = serviceProvider;
-        _encoder = new ProtobufMsgEncoder(serviceProvider.GetService<ILogger<ProtobufMsgEncoder>>());
-    }
-
-    public void Start(CancellationToken cancellationToken)
-    {
-        _cancellationToken = cancellationToken;
-        _cancellationToken.Register(Dispose);
-    
-    }
-
-    private void InitHeart()
-    {
-        heartbeatTimer = new System.Threading.Timer(_ =>
-        {
-            _logger.LogInformation("Heartbeat");
-            Bradcast(new ProtoLib()
+        config
+            // .SetBindIPHost(UdpPort)
+            .SetListenIPHosts(TcpPort)
+            .SetTcpDataHandlingAdapter(() => packageAdapter)
+            .SetUdpDataHandlingAdapter(() => new UdpProtoPackageAdapter(packageAdapter))
+            .ConfigureContainer(a => // 
             {
-                Ping = new ProtoPing() { pingTime = DateTimeOffset.Now.ToUnixTimeMilliseconds() }
-            }).Wait(_cancellationToken);
-        }, null, 5000, 5000);
-        _cancellationToken.Register(() => { heartbeatTimer?.Dispose(); });
-    }
-
-    private void InitListener(IPipeReceiveHandle pipeReceiveHandle)
-    {
-        _tcpListener = new TcpListener(IPAddress.Any, TcpPort);
-        _cancellationToken.Register(() => { _tcpListener?.Stop(); });
-        Task.Run(async () =>
-        {
-            _tcpListener.Start();
-            while (!_cancellationToken.IsCancellationRequested)
+            })
+            .ConfigurePlugins(a => // 
             {
-                var client = await _tcpListener.AcceptTcpClientAsync(
-#if !NETFRAMEWORK
-                    _cancellationToken
-#endif
-                );
-          
-                var tcpClientPipHandle = new TcpClientMessenger(client,_cancellationToken);
-                tcpMessengers.Add(tcpClientPipHandle);
-            }
-        }, _cancellationToken);
+                a.AddLegodPusePlugin();
+                a.AddTcpConnectedPlugin(TcpConnectedHandle);
+                //a.UseTcpSessionCheckClear(options =>
+                // {
+                //     options.
+                //     options.CheckClearType = CheckClearType.All;
+                //     options.Tick = TimeSpan.FromSeconds(60);
+                //     options.OnClose = async (c, t) =>
+                //     {
+                //         await c.CloseAsync("超时无数据");
+                //     };
+                // });
+                a.AddTcpSendingPlugin(TcpSendHandleTask);
+            });
+        base.LoadConfig(config);
     }
 
-    private void InitBroadcast()
+
+    private async Task TcpConnectedHandle(ITcpSession arg1, ConnectedEventArgs arg2)
     {
-        if (brodcastPipe == null)
+        await arg2.InvokeNext();
+    }
+
+
+    public override async Task StartAsync(CancellationToken cancellationToken = default)
+    {
+        var value = localConfigSection?.GetValue<string>("path");
+        udpService = new UdpSession();
+        tcpService = new TcpService();
+        await udpService.SetupAsync(base.Config);
+        udpService.Config.RemoteIPHost = new IPHost(IPAddress.Broadcast, UdpPort);
+        await udpService.StartAsync(cancellationToken);
+        await tcpService.SetupAsync(base.Config);
+        await tcpService.StartAsync(cancellationToken);
+        tcpService.Received += Received;
+        await Task.Run(() => ExecuteAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
+    }
+
+    private Task Received(TcpSessionClient client, ReceivedDataEventArgs e)
+    {
+        if (e.RequestInfo is ProtoLib myRequest)
         {
-            brodcastPipe = new PipeChannel(_cancellationToken, _serviceProvider.GetService<ILogger<PipeChannel>>());
-            _cancellationToken.Register(() => { brodcastPipe.Dispose(); });
+            client.Logger.Info($"已从{client.Id}接收到,seq={myRequest.Seq}");
         }
 
-        foreach (var address in NetworkUtil.GetAllIPBradcast())
-        {
-            var endPoint = new IPEndPoint(address, UdpPort);
-            var udpClient = new UdpClient(address.AddressFamily);
-            try
-            {
-                udpClient.Connect(endPoint);
-                var udpClientMessenger = _serviceProvider.GetService<UdpClientMessenger>();
-                udpClientMessenger.RegisterSender(udpClient,brodcastPipe);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "udpClient.Connect error");
-            }
-        }
-
-        // Bradcast(new ProtoLib()
-        // {
-        //     ServerInfo = new ProtoServerInfo()
-        //     {
-        //         IpAddress = NetworkUtil.GetAllIP().Select(x => x.ToString()).ToArray(),
-        //         TcpPort = TcpPort,
-        //         UdpPort = UdpPort
-        //     }
-        // }).Wait(_cancellationToken);
+        return e.InvokeNext();
     }
 
-    public async Task Bradcast<T>(T pack) where T : ProtoLib
+    public override async Task<Result> StopAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            // InitBroadcast();
-            heartbeatTimer?.Change(5000, 5000);
-            Interlocked.Increment(ref _seq);
-            pack.Seq = _seq;
-
-
-            var length = await _encoder.Encode(brodcastPipe.SendPipe.Writer, pack);
-            _logger.LogInformation("Encode Bradcast {length} bytes", length);
+            return Result.Success;
+        }
+        catch (TaskCanceledException e)
+        {
+            return Result.Canceled;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Bradcast error");
+            logger.LogError(e, "StopAsync error");
+            return Result.FromException(e);
+        }
+    }
+
+
+    private Task TcpSendHandleTask(ITcpSession arg1, SendingEventArgs arg2)
+    {
+        return arg2.InvokeNext();
+    }
+
+    protected async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var now = DateTimeOffset.Now;
+            var ts = now.ToUnixTimeSeconds();
+            logger.LogInformation("Worker running at:{ts} {time}", ts, now);
+            var pack = new ProtoLib() { Ping = new() { pingTime = ts } };
+            await Broadcast(pack, stoppingToken);
+
+            await Task.Delay(5000, stoppingToken);
+        }
+    }
+
+    public async Task Broadcast<T>(T pack, CancellationToken stoppingToken) where T : ProtoLib
+    {
+        var readOnlyMemory = pack.BuildAsBytes();
+        StringBuilder log = new();
+        StringBuilder error = new();
+        foreach (var address in NetworkUtil.GetAllIPBradcast())
+        {
+            if (address.AddressFamily == AddressFamily.InterNetworkV6) continue;
+            var endPoint = new IPEndPoint(address, UdpPort);
+            try
+            {
+                await this.udpService.SendAsync(endPoint, readOnlyMemory, stoppingToken);
+                log.AppendLine(endPoint.ToString());
+            }
+            catch (Exception e)
+            {
+                error.AppendLine(endPoint.ToString());
+            }
+        }
+
+        if (log.Length > 0)
+        {
+            logger.LogInformation("Broadcast success seq={seq} > {log}", pack.Seq, log);
+        }
+
+        if (error.Length > 0)
+        {
+            logger.LogError("Broadcast error seq={seq} > {log}", pack.Seq, log);
         }
     }
 
     private void Stop()
     {
-        foreach (var pipe in tcpMessengers)
-        {
-            try
-            {
-                pipe.Dispose();
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "pipe.Dispose error");
-            }
-        }
+        udpService?.Dispose();
+        tcpService?.Dispose();
     }
 
     public void Dispose()

@@ -44,6 +44,7 @@
         <PackageReference Include="Microsoft.Extensions.Http"/>
         <PackageReference Include="protobuf-net"/>
         <PackageReference Include="TouchSocket" />
+        <PackageReference Include="TouchSocket.Hosting" />
         <Reference Include="System.Net.Http"/>
         <Reference Include="Microsoft.Extensions.Configuration"/>
     </ItemGroup>
@@ -60,11 +61,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\LegodPause.Core\LegodPause.Core.csproj" />
-    </ItemGroup>
-    
-
-    <ItemGroup>
-      <Folder Include="Server\" />
     </ItemGroup>
     <Target Name="StopPauseService" BeforeTargets="Build">
         <Exec Command="powershell -Command &quot;Start-Process sc -ArgumentList 'stop LegodPauseService' -Verb RunAs &quot;"/>
