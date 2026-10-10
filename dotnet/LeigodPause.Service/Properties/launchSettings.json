@@ -1,6 +1,11 @@
 {
   "$schema": "http://json.schemastore.org/launchsettings.json",
   "profiles": {
+    "LeigodPause.Service": {
+      "commandName": "Project",
+      "environmentVariables": {
+      }
+    },
     "LeigodPause.Service -install": {
       "commandName": "Project",
       "environmentVariables": {

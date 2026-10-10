@@ -46,8 +46,9 @@ public partial class Utils
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                StandardOutputEncoding = Encoding.GetEncoding("gbk"),
-                StandardErrorEncoding = Encoding.GetEncoding("gbk")
+                CreateNoWindow = true,
+                StandardOutputEncoding = GetOEMEncoding(),
+                StandardErrorEncoding = GetOEMEncoding()
             });
 
             process.WaitForExit();
@@ -92,6 +93,11 @@ public partial class Utils
                     Verb = "runas",
                     WorkingDirectory = Environment.CurrentDirectory,
                     UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = GetOEMEncoding(),
+                    StandardErrorEncoding = GetOEMEncoding()
                 });
 
                 process.WaitForExit();
@@ -103,8 +109,9 @@ public partial class Utils
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    StandardOutputEncoding = Encoding.GetEncoding("gbk"),
-                    StandardErrorEncoding = Encoding.GetEncoding("gbk")
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = GetOEMEncoding(),
+                    StandardErrorEncoding = GetOEMEncoding()
                 });
 
                 process1.WaitForExit();
@@ -134,7 +141,10 @@ public partial class Utils
             {
                 Verb = "runas",
                 WorkingDirectory = Environment.CurrentDirectory,
-                UseShellExecute = true
+                UseShellExecute = true,
+                CreateNoWindow = true,
+                StandardOutputEncoding = GetOEMEncoding(),
+                StandardErrorEncoding = GetOEMEncoding()
             });
 
             process.WaitForExit();
@@ -160,8 +170,9 @@ public partial class Utils
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    StandardOutputEncoding = Encoding.GetEncoding("gbk"),
-                    StandardErrorEncoding = Encoding.GetEncoding("gbk"),
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = GetOEMEncoding(),
+                    StandardErrorEncoding = GetOEMEncoding()
                 }
             );
 
@@ -210,8 +221,9 @@ public partial class Utils
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    StandardOutputEncoding = Encoding.GetEncoding("gbk"),
-                    StandardErrorEncoding = Encoding.GetEncoding("gbk"),
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = GetOEMEncoding(),
+                    StandardErrorEncoding = GetOEMEncoding()
                 }
             );
 

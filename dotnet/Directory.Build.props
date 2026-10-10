@@ -3,6 +3,9 @@
         <Version>0.0.1</Version>
         <LangVersion>preview</LangVersion>
         <Nullable>enable</Nullable>
+
+        <IsUnifiedNETVersion>$([MSBuild]::VersionGreaterThanOrEquals('$([MSBuild]::GetTargetFrameworkVersion('$(TargetFramework)'))','6.0'))</IsUnifiedNETVersion>
+
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <DebugType>none</DebugType>

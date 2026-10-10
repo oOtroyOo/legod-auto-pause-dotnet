@@ -9,7 +9,7 @@
     xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
     Title="DashboardPage"
     d:DesignHeight="450"
-    d:DesignWidth="700"
+    d:DesignWidth="750"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -20,10 +20,11 @@
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Page.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" MinWidth="400" />
+            <ColumnDefinition Width="350" />
         </Grid.ColumnDefinitions>
 
         <!-- 左侧：Dashboard -->
@@ -43,16 +44,21 @@
                 </ui:Button>
 
             </StackPanel>
-            <ui:Button
-                Grid.Column="0"
-                Click="OnBaseButtonClick"
-                Content="Click me!"
-                Icon="{ui:SymbolIcon Fluent24}" />
-            <TextBlock
-                x:Name="CounterTextBlock"
-                Grid.Column="1"
-                Margin="12,0,0,0"
-                VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <ui:Button
+                    Margin="0,0,4,0"
+                    Icon="{ui:SymbolIcon CommentCheckmark48}"
+                    Content="检查token"
+                    Click="backTokenBtn_Click" />
+                <ui:Button
+                    Click="OnBaseButtonClick"
+                    Content="Click me!"
+                    Icon="{ui:SymbolIcon Fluent24}" />
+                <TextBlock
+                    x:Name="CounterTextBlock"
+                    Margin="12,0,0,0"
+                    VerticalAlignment="Center" />
+            </StackPanel>
         </StackPanel>
 
         <!-- 右侧：WebView -->
@@ -63,7 +69,7 @@
                 <RowDefinition Height="Auto"></RowDefinition>
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0">
+            <Grid Grid.Row="0" Visibility="Collapsed">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"></ColumnDefinition>
                     <ColumnDefinition Width="Auto"></ColumnDefinition>

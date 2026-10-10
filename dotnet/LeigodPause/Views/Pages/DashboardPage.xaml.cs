@@ -39,6 +39,8 @@ public partial class DashboardPage : INotifyPropertyChanged
     private const string leigodLoginUrl = "https://www.leigod.com/mlogin";
     // "https://www.leigod.com/m/mlogin.html?region_code=1&language=zh_CN&platform=2";
 
+    private const string leigodPersonalUrl = "https://www.leigod.com/personal-center";
+
     private const string UserAgent = "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36 EdgA/110.0.1587.63";
     public LeigodCoreModel LeigodCoreModel { get; } = App.Host.Services.GetRequiredService<LeigodCoreModel>();
 
@@ -183,7 +185,8 @@ public partial class DashboardPage : INotifyPropertyChanged
 
         WebView.CoreWebView2.WindowCloseRequested += CoreWebView2_WindowCloseRequested;
         WebView.CoreWebView2.Settings.UserAgent = UserAgent;
-        WebView.Source = new Uri(leigodLoginUrl);
+        WebView.Source = new Uri(leigodPersonalUrl);
+        // WebView.Source = new Uri(leigodLoginUrl);
     }
 
     private void UrlText_OnKeyDown(object sender, KeyEventArgs e)

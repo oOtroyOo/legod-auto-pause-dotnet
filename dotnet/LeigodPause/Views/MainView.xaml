@@ -10,7 +10,7 @@
     xmlns:tray="http://schemas.lepo.co/wpfui/2022/xaml/tray"
     DataContext="{Binding RelativeSource={RelativeSource Self}}"
     Title="WPF UI - Console Demo"
-    Width="600"
+    Width="900"
     Height="700"
     d:DesignWidth="600"
     d:DesignHeight="700"
