@@ -1,0 +1,95 @@
+<Page
+    x:Class="LeigodPause.Views.Pages.DashboardPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:app="clr-namespace:LeigodPause"
+    xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+    Title="DashboardPage"
+    d:DesignHeight="450"
+    d:DesignWidth="700"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    ScrollViewer.CanContentScroll="False"
+    DataContext="{Binding RelativeSource={RelativeSource Self}}"
+    Loaded="OnLoaded"
+    mc:Ignorable="d">
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Page.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- 左侧：Dashboard -->
+        <StackPanel Grid.Column="0" Margin="12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <Label Content="系统服务状态：" VerticalAlignment="Center"></Label>
+                <ui:TextBlock x:Name="RunningTextBlock" Text="{Binding IsRunningText}" VerticalAlignment="Center" />
+                <ui:Button x:Name="RunButton" Content="启动服务" Click="RunButton_OnClick">
+                    <ui:Button.Icon>
+                        <ui:ImageIcon Source="{Binding Source={x:Static Application.Current},Path=(app:App.UacImageSource).Value}" />
+                    </ui:Button.Icon>
+                </ui:Button>
+                <ui:Button x:Name="InstallButton" Content="{Binding InstallButtonText}" Click="InstallButton_OnClick">
+                    <ui:Button.Icon>
+                        <ui:ImageIcon Source="{Binding Source={x:Static Application.Current},Path=(app:App.UacImageSource).Value}" />
+                    </ui:Button.Icon>
+                </ui:Button>
+
+            </StackPanel>
+            <ui:Button
+                Grid.Column="0"
+                Click="OnBaseButtonClick"
+                Content="Click me!"
+                Icon="{ui:SymbolIcon Fluent24}" />
+            <TextBlock
+                x:Name="CounterTextBlock"
+                Grid.Column="1"
+                Margin="12,0,0,0"
+                VerticalAlignment="Center" />
+        </StackPanel>
+
+        <!-- 右侧：WebView -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <ui:Button Grid.Column="0" Margin="0,0,4,0"
+                           IsEnabled="{Binding CanGoBack, ElementName=WebView}"
+                           Icon="{ui:SymbolIcon ArrowCircleLeft48}"
+                           Click="backBtn_Click" />
+                <ui:Button Grid.Column="1" Margin="0,0,4,0"
+                           Icon="{ui:SymbolIcon CommentCheckmark48}"
+                           Content="检查token"
+                           Click="backTokenBtn_Click" />
+                <ui:TextBox Grid.Column="2" Padding="0"
+                            x:Name="UrlText"
+                            KeyDown="UrlText_OnKeyDown" />
+            </Grid>
+
+            <wv2:WebView2 Grid.Row="1" Name="WebView"
+                          NavigationStarting="WebView_OnNavigationStarting"
+                          NavigationCompleted="WebView_OnNavigationCompleted"
+                          CoreWebView2InitializationCompleted="WebView_CoreWebView2InitializationCompleted"
+                          Source="https://www.baidu.com" />
+            <ProgressBar Name="ProgressBar"
+                         Grid.Row="2"
+                         IsIndeterminate="True" />
+        </Grid>
+    </Grid>
+</Page>
