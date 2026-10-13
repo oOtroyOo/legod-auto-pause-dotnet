@@ -1,30 +1,61 @@
-﻿namespace LeigodPause.Service.Proto;
+﻿using System.Text;
 
-using Microsoft.Extensions.Configuration;
+namespace LeigodPause.Service.Proto;
+
+using IniParser;
+using IniParser.Model;
+using System;
+using System.Globalization;
+using System.IO;
 
 public class ConfigFile
 {
-    public static IConfigurationRoot? Config => _lazyConfig.Value;
-
-    private static Lazy<IConfigurationRoot> _lazyConfig = new Lazy<IConfigurationRoot>(BuildConfigurationRoot);
-
     const string FileName = "config.ini";
     static string Section => Path.GetFileNameWithoutExtension(FileName);
+    static string FilePath => Path.Combine(AppContext.BaseDirectory, FileName);
 
+    private static readonly FileIniDataParser _parser = new FileIniDataParser();
+    private static IniData _data = Load();
+
+    private static IniData Load()
+    {
+        _parser.Parser.Configuration.CommentString = "#";
+        if (File.Exists(FilePath))
+            return _parser.ReadFile(FilePath, Encoding.UTF8);
+
+        return new IniData();
+    }
+
+    private static void EnsureSection()
+    {
+        if (!_data.Sections.ContainsSection(Section))
+            _data.Sections.AddSection(Section);
+    }
 
     public static T? GetValue<T>(string key)
     {
-        if (Config != null) return Config.GetValue<T>($"{Section}:{key}");
+        var section = _data.Sections[Section];
+        var raw = section?[key];
+        if (string.IsNullOrEmpty(raw)) return default;
 
-        return default;
+        try
+        {
+            var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+            object? converted = targetType.IsEnum
+                ? Enum.Parse(targetType, raw, ignoreCase: true)
+                : Convert.ChangeType(raw, targetType, CultureInfo.InvariantCulture);
+            return (T)converted;
+        }
+        catch
+        {
+            return default;
+        }
     }
 
-
-    private static IConfigurationRoot BuildConfigurationRoot()
+    public static void SetValue<T>(string key, T value)
     {
-        return new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddIniFile("config.ini", optional: true, reloadOnChange: true)
-            .Build();
+        EnsureSection();
+        _data[Section][key] = value?.ToString();
+        _parser.WriteFile(FilePath, _data, Encoding.UTF8);
     }
 }

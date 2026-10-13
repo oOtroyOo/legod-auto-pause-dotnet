@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using LeigodPause.Service.Api;
 using LeigodPause.Service.Network;
 using LeigodPause.Service.Proto;
 
@@ -41,10 +42,11 @@ public class Program
     private static IHost BuildService(string[] args)
     {
         var builder = Host.CreateApplicationBuilder(args);
-        builder.Services.AddHostedService<Worker>();
-        builder.Services.AddSingleton<NetworkServer>();
-        builder.Services.AddWindowsService();
-        builder.Services.AddHttpClient();
+        builder.Services
+            .AddHostedService<Worker>()
+            .AddSingleton<NetworkServer>()
+            .AddLeigodHttpClient()
+            .AddWindowsService();
         AppHost = builder.Build();
         return AppHost;
     }

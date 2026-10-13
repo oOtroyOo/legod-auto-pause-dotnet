@@ -1,4 +1,4 @@
-// This Source Code Form is subject to the terms of the MIT License.
+﻿// This Source Code Form is subject to the terms of the MIT License.
 // If a copy of the MIT was not distributed with this file, You can obtain one at https://opensource.org/licenses/MIT.
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
@@ -15,11 +15,13 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using LeigodPause.Models;
 using LeigodPause.Service;
+using LeigodPause.Service.Api;
+using LeigodPause.Service.Models;
+using LeigodPause.Service.Proto;
 using LeigodPause.Utilities;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Web.WebView2.Core;
-using Button = Wpf.Ui.Controls.Button;
-using TextBlock = Wpf.Ui.Controls.TextBlock;
 using Timer = System.Timers.Timer;
 
 namespace LeigodPause.Views.Pages;
@@ -33,25 +35,31 @@ public partial class DashboardPage : INotifyPropertyChanged
     private bool _isRunning = false;
     public string IsRunningText => IsRunning ? "运行中" : "未运行";
     public bool IsRunning => _isRunning;
+    public Visibility RunningBtnVisible => (Utils.IsInstalled() && !IsRunning) ? Visibility.Visible : Visibility.Collapsed;
 
     private int _counter = 0;
+
+    private DateTimeOffset lastInfoTime = DateTimeOffset.MinValue;
 
     private const string leigodLoginUrl = "https://www.leigod.com/mlogin";
     // "https://www.leigod.com/m/mlogin.html?region_code=1&language=zh_CN&platform=2";
 
     private const string leigodPersonalUrl = "https://www.leigod.com/personal-center";
 
-    private const string UserAgent = "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36 EdgA/110.0.1587.63";
     public LeigodCoreModel LeigodCoreModel { get; } = App.Host.Services.GetRequiredService<LeigodCoreModel>();
+
+    private ILogger<DashboardPage> logger = App.Host.Services.GetRequiredService<ILogger<DashboardPage>>();
 
     public DashboardPage()
     {
         DataContext = this;
         InitializeComponent();
 
-        CounterTextBlock.SetCurrentValue(System.Windows.Controls.TextBlock.TextProperty, _counter.ToString());
+        CounterTextBlock.SetCurrentValue(TextBlock.TextProperty, _counter.ToString());
 
-        this.ApplyTheme();
+        // 不调用 this.ApplyTheme()：否则会给本页挂一个“构造时固定”的本地主题字典，
+        // 就近遮蔽全局/主窗口的主题画刷，导致设置页切换主题时本页文字颜色不更新。
+        // 文字颜色由 Page 上的 {DynamicResource TextFillColorPrimaryBrush} 提供，随主题动态刷新。
 
         var currentApp = (App)App.CurrentApp;
         var appMainWindow = currentApp.MainWindow;
@@ -63,18 +71,27 @@ public partial class DashboardPage : INotifyPropertyChanged
         var timer = new Timer(1000);
         timer.Elapsed += (s, e) => { this.Dispatcher.Invoke(UpdateTimer); };
         timer.Start();
-        UpdateTimer();
+        _ = UpdateTimer();
     }
 
-    void UpdateTimer()
+    private async Task UpdateTimer()
     {
-        _isRunning = LeigodPause.Service.Utils.IsRunning();
-        if (!IsRunningText.Equals(this.RunningTextBlock.GetValue(TextBlock.TextProperty)))
+        _isRunning = Utils.IsRunning();
+        if (!IsRunningText.Equals(RunningTextBlock.GetValue(TextBlock.TextProperty)))
         {
-            this.OnPropertyChanged(nameof(IsRunningText));
+            OnPropertyChanged(nameof(IsRunningText));
         }
 
-        this.RunButton.Visibility = (LeigodPause.Service.Utils.IsInstalled() && !IsRunning) ? Visibility.Visible : Visibility.Collapsed;
+        OnPropertyChanged(nameof(RunningBtnVisible));
+
+        if (DateTimeOffset.Now - lastInfoTime > TimeSpan.FromSeconds(5))
+        {
+            if (LeigodCoreModel.Token is { Length: > 0 })
+            {
+                await LeigodCoreModel.RequestUserInfo().ConfigureAwait(false);
+                lastInfoTime = DateTimeOffset.Now;
+            }
+        }
     }
 
     private void OnBaseButtonClick(object sender, RoutedEventArgs e)
@@ -97,8 +114,8 @@ public partial class DashboardPage : INotifyPropertyChanged
             serviceExe += ".exe";
         }
 
-        this.InstallButton.IsEnabled = false;
-        var isInstalled = LeigodPause.Service.Utils.IsInstalled();
+        InstallButton.IsEnabled = false;
+        var isInstalled = Utils.IsInstalled();
         Task.Run(async () =>
         {
             Process? process = Process.Start(new ProcessStartInfo(serviceExe, isInstalled ? "--uninstall" : "--install")
@@ -113,19 +130,18 @@ public partial class DashboardPage : INotifyPropertyChanged
             {
                 CancellationTokenSource tokenSource = new CancellationTokenSource();
                 tokenSource.CancelAfter(5000);
-                while (!tokenSource.IsCancellationRequested && (!isInstalled && !LeigodPause.Service.Utils.IsInstalled()) || (isInstalled && LeigodPause.Service.Utils.IsInstalled()))
+                while (!tokenSource.IsCancellationRequested && (!isInstalled && !Utils.IsInstalled()) ||
+                       (isInstalled && Utils.IsInstalled()))
                 {
                     await Task.Delay(1, tokenSource.Token);
                 }
             }
-            else
-            {
-            }
 
-            await this.Dispatcher.InvokeAsync(() =>
+            await Dispatcher.InvokeAsync(() =>
             {
-                this.InstallButton.IsEnabled = true;
-                this.OnPropertyChanged(nameof(InstallButtonText));
+                InstallButton.IsEnabled = true;
+                OnPropertyChanged(nameof(InstallButtonText));
+                OnPropertyChanged(nameof(RunningBtnVisible));
                 // this.InstallButton.SetCurrentValue(System.Windows.Controls.Button.ContentProperty, InstallButtonText);
             });
         });
@@ -149,7 +165,7 @@ public partial class DashboardPage : INotifyPropertyChanged
     private void RunButton_OnClick(object sender, RoutedEventArgs e)
     {
         Utils.RunService();
-        UpdateTimer();
+        _ = UpdateTimer();
     }
 
     // ===== WebView（原 WebPage） =====
@@ -179,12 +195,12 @@ public partial class DashboardPage : INotifyPropertyChanged
         ProgressBar.Visibility = Visibility.Collapsed;
         if (e.InitializationException != null)
         {
-            Console.WriteLine(e.InitializationException);
+            logger.LogError(e.InitializationException, "Webview初始化错误");
             throw e.InitializationException;
         }
 
         WebView.CoreWebView2.WindowCloseRequested += CoreWebView2_WindowCloseRequested;
-        WebView.CoreWebView2.Settings.UserAgent = UserAgent;
+        WebView.CoreWebView2.Settings.UserAgent = HttpClientExtensions.UserAgent;
         WebView.Source = new Uri(leigodPersonalUrl);
         // WebView.Source = new Uri(leigodLoginUrl);
     }
@@ -260,7 +276,7 @@ public partial class DashboardPage : INotifyPropertyChanged
             }
             catch (Exception exception)
             {
-                Console.WriteLine(exception);
+                logger.LogError(exception, "浏览器进程未找到");
             }
 
             var dirName = Process.GetCurrentProcess().MainModule.FileName + ".WebView2";
@@ -276,7 +292,7 @@ public partial class DashboardPage : INotifyPropertyChanged
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine(e);
+                        logger.LogError(e, $"无法删除{Path.GetFileName(fileName)}");
                     }
                 }
 
@@ -291,7 +307,7 @@ public partial class DashboardPage : INotifyPropertyChanged
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine(e);
+                            logger.LogError(e, $"无法删除{Path.GetFileName(folder)}");
                         }
                     }
                 }
@@ -307,9 +323,9 @@ public partial class DashboardPage : INotifyPropertyChanged
             var token = (await WebView.ExecuteScriptAsync("JSON.parse(localStorage.getItem('account_token')).account_token"))?.Trim('"');
             if (!string.IsNullOrEmpty(token) && token != "null")
             {
-                LeigodCoreModel.Token = token;
                 await this.Dispatcher.InvokeAsync(async () =>
                 {
+                    LeigodCoreModel.Token = token;
                     var messageBox = new Wpf.Ui.Controls.MessageBox
                     {
                         Content = token,
@@ -318,12 +334,17 @@ public partial class DashboardPage : INotifyPropertyChanged
                     };
                     var boxResult = await messageBox.ShowDialogAsync();
                     Clipboard.SetDataObject(token);
+
+
+                    await LeigodCoreModel.RequestUserInfo()
+                        .ContinueWith(t => this.Dispatcher.InvokeAsync(() => OnPropertyChanged(nameof(LeigodCoreModel))));
                 });
             }
             else
             {
                 await this.Dispatcher.InvokeAsync(async () =>
                 {
+                    LeigodCoreModel.Token = string.Empty;
                     var messageBox = new Wpf.Ui.Controls.MessageBox
                     {
                         Content = "没有找到Token",
@@ -335,12 +356,17 @@ public partial class DashboardPage : INotifyPropertyChanged
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            logger.LogError(e, "token提取错误");
         }
     }
 
-    private async void backTokenBtn_Click(object sender, RoutedEventArgs e)
+    private async void TokenBtn_Click(object sender, RoutedEventArgs e)
     {
         await PrintToken();
+    }
+
+    private void PauseBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _ = LeigodCoreModel.SendPauseState();
     }
 }

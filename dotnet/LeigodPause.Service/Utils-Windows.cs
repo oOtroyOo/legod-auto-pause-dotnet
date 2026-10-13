@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -143,8 +143,10 @@ public partial class Utils
                 WorkingDirectory = Environment.CurrentDirectory,
                 UseShellExecute = true,
                 CreateNoWindow = true,
-                StandardOutputEncoding = GetOEMEncoding(),
-                StandardErrorEncoding = GetOEMEncoding()
+                // RedirectStandardError = true,
+                // RedirectStandardOutput = true,
+                // StandardOutputEncoding = GetOEMEncoding(),
+                // StandardErrorEncoding = GetOEMEncoding()
             });
 
             process.WaitForExit();
@@ -179,7 +181,7 @@ public partial class Utils
             process.WaitForExit();
             var output = process.StandardOutput.ReadToEnd();
             var error = process.StandardError.ReadToEnd();
-            Console.WriteLine($"code={process.ExitCode} out={output}\n err={error}");
+            // Console.WriteLine($"code={process.ExitCode} out={output}\n err={error}");
             return process.ExitCode == 0 && output?.Length > 0;
             /*
             SERVICE_NAME: LeigodPauseService
@@ -230,7 +232,7 @@ public partial class Utils
             process.WaitForExit();
             var output = process.StandardOutput.ReadToEnd();
             var error = process.StandardError.ReadToEnd();
-            Console.WriteLine($"code={process.ExitCode} out={output} err={error}");
+            // Console.WriteLine($"code={process.ExitCode} out={output} err={error}");
 
             // 检查服务状态是否为 RUNNING
             return process.ExitCode == 0 && output?.Contains("RUNNING") == true;

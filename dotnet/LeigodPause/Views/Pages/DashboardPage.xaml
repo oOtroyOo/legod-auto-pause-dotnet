@@ -20,7 +20,6 @@
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Page.Resources>
-
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MinWidth="400" />
@@ -28,11 +27,18 @@
         </Grid.ColumnDefinitions>
 
         <!-- 左侧：Dashboard -->
-        <StackPanel Grid.Column="0" Margin="12">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+        <Grid Grid.Column="0" Margin="12" VerticalAlignment="Top">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Margin="5"
+                        Orientation="Horizontal">
                 <Label Content="系统服务状态：" VerticalAlignment="Center"></Label>
                 <ui:TextBlock x:Name="RunningTextBlock" Text="{Binding IsRunningText}" VerticalAlignment="Center" />
-                <ui:Button x:Name="RunButton" Content="启动服务" Click="RunButton_OnClick">
+                <ui:Button x:Name="RunButton" Content="启动服务" Click="RunButton_OnClick" Visibility="{Binding RunningBtnVisible}">
                     <ui:Button.Icon>
                         <ui:ImageIcon Source="{Binding Source={x:Static Application.Current},Path=(app:App.UacImageSource).Value}" />
                     </ui:Button.Icon>
@@ -44,22 +50,57 @@
                 </ui:Button>
 
             </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+            <StackPanel Grid.Row="1"
+                        Margin="5"
+                        Orientation="Horizontal">
                 <ui:Button
                     Margin="0,0,4,0"
                     Icon="{ui:SymbolIcon CommentCheckmark48}"
                     Content="检查token"
-                    Click="backTokenBtn_Click" />
+                    Click="TokenBtn_Click" />
+                <Label Content="网页登录后点击检查" VerticalAlignment="Center"></Label>
                 <ui:Button
+                    Visibility="Collapsed"
                     Click="OnBaseButtonClick"
                     Content="Click me!"
                     Icon="{ui:SymbolIcon Fluent24}" />
-                <TextBlock
+                <ui:TextBlock
+                    Visibility="Collapsed"
                     x:Name="CounterTextBlock"
                     Margin="12,0,0,0"
                     VerticalAlignment="Center" />
             </StackPanel>
-        </StackPanel>
+            <StackPanel Grid.Row="2"
+                        Margin="5"
+                        Orientation="Horizontal">
+                <ui:TextBlock Text="昵称"
+                              Margin="3"
+                              VerticalAlignment="Center">
+                </ui:TextBlock>
+                <ui:TextBlock Text="{Binding LeigodCoreModel.UserName}"
+                              Margin="3"
+                              VerticalAlignment="Center">
+                </ui:TextBlock>
+            </StackPanel>
+            <StackPanel Grid.Row="3"
+                        Margin="5"
+                        Orientation="Horizontal">
+                <ui:TextBlock Text="暂停状态"
+                              Margin="3"
+                              VerticalAlignment="Center">
+                </ui:TextBlock>
+                <ui:TextBlock Text="{Binding LeigodCoreModel.PauseStatus}"
+                              Margin="3"
+                              VerticalAlignment="Center">
+                </ui:TextBlock>
+                <ui:Button
+                    Margin="4"
+                    Icon="{ui:SymbolIcon Pause48}"
+                    Content="立即暂停"
+                    Visibility="{Binding LeigodCoreModel.IsNotPaused, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    Click="PauseBtn_Click" />
+            </StackPanel>
+        </Grid>
 
         <!-- 右侧：WebView -->
         <Grid Grid.Column="1">
@@ -82,7 +123,7 @@
                 <ui:Button Grid.Column="1" Margin="0,0,4,0"
                            Icon="{ui:SymbolIcon CommentCheckmark48}"
                            Content="检查token"
-                           Click="backTokenBtn_Click" />
+                           Click="TokenBtn_Click" />
                 <ui:TextBox Grid.Column="2" Padding="0"
                             x:Name="UrlText"
                             KeyDown="UrlText_OnKeyDown" />

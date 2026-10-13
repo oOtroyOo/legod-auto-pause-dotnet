@@ -5,9 +5,12 @@
 
 using System.ComponentModel;
 using LeigodPause.Models;
+using LeigodPause.Service.Models;
+using LeigodPause.Service.Proto;
 using LeigodPause.Utilities;
 using LeigodPause.Views.Pages;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Web.WebView2.Core;
 
 namespace LeigodPause.Views;
@@ -21,6 +24,7 @@ public partial class MainView
     ];
 
     public LeigodCoreModel LeigodCoreModel { get; } = App.Host.Services.GetRequiredService<LeigodCoreModel>();
+    private ILogger<MainView> logger = App.Host.Services.GetRequiredService<ILogger<MainView>>();
 
     public MainView()
     {
@@ -29,7 +33,7 @@ public partial class MainView
         Loaded += (_, _) => RootNavigation.Navigate(typeof(DashboardPage));
 
         UiApplication.Current.MainWindow = this;
-
+        logger.LogInformation("games: {games}", ConfigFile.GetValue<string>("games"));
         this.ApplyTheme();
     }
 

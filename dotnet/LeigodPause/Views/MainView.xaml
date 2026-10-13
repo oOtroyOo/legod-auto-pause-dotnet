@@ -10,10 +10,14 @@
     xmlns:tray="http://schemas.lepo.co/wpfui/2022/xaml/tray"
     DataContext="{Binding RelativeSource={RelativeSource Self}}"
     Title="WPF UI - Console Demo"
-    Width="900"
+    MinWidth="820"
+    Width="820"
     Height="700"
     d:DesignWidth="600"
     d:DesignHeight="700"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Closing="MainView_OnClosing"
     ExtendsContentIntoTitleBar="True"
     WindowStartupLocation="CenterScreen"
@@ -32,8 +36,9 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <ui:NavigationView x:Name="RootNavigation" Grid.Row="1"
-                           PaneDisplayMode="Left"
+                           PaneDisplayMode="LeftMinimal"
                            IsPaneOpen="False"
+                           IsPaneToggleVisible="False"
                            IsBackButtonVisible="Collapsed">
             <!-- <ui:NavigationView.AutoSuggestBox> -->
             <!--     <ui:AutoSuggestBox x:Name="AutoSuggestBox" PlaceholderText="Search"> -->
@@ -52,11 +57,17 @@
             <!-- </ui:NavigationView.Header> -->
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem
-                    Content="Dashboard"
                     NavigationCacheMode="Enabled"
                     TargetPageType="{x:Type pages:DashboardPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Home24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem
+                    NavigationCacheMode="Enabled"
+                    TargetPageType="{x:Type pages:GamesPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Games24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>

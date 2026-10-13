@@ -10,11 +10,10 @@
 
 
     <ItemGroup>
-        <PackageReference Include="CommunityToolkit.Mvvm" />
         <PackageReference Include="Microsoft.Web.WebView2" />
+        <PackageReference Include="CommunityToolkit.Mvvm" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
         <PackageReference Include="Microsoft.Extensions.Http" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
         <PackageReference Include="WPF-UI.Tray"/>
         <PackageReference Include="WPF-UI"/>
 
