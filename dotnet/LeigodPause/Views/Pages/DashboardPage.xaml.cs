@@ -88,7 +88,17 @@ public partial class DashboardPage : INotifyPropertyChanged
         {
             if (LeigodCoreModel.Token is { Length: > 0 })
             {
-                await LeigodCoreModel.RequestUserInfo().ConfigureAwait(false);
+                await LeigodCoreModel.RequestUserInfo((i, s) =>
+                {
+                    LeigodCoreModel.Token = null;
+                    var messageBox = new Wpf.Ui.Controls.MessageBox
+                    {
+                        Content = i + "\n" + s,
+                        Title = "用户登录失效", 
+                        CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
+                    };
+                    messageBox.ShowDialogAsync();
+                }).ConfigureAwait(false);
                 lastInfoTime = DateTimeOffset.Now;
             }
         }
@@ -367,6 +377,16 @@ public partial class DashboardPage : INotifyPropertyChanged
 
     private void PauseBtn_Click(object sender, RoutedEventArgs e)
     {
-        _ = LeigodCoreModel.SendPauseState();
+        _ = LeigodCoreModel.SendPauseState((i, s) =>
+        {
+            LeigodCoreModel.Token = null;
+            var messageBox = new Wpf.Ui.Controls.MessageBox
+            {
+                Content = i + "\n" + s,
+                Title = "暂停调用失败",
+                CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
+            };
+            messageBox.ShowDialogAsync();
+        });
     }
 }

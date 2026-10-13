@@ -57,70 +57,20 @@ public partial class LeigodCoreModel : ObservableObject
         }
     }
 
-    public async Task RequestUserInfo(Action<int, string?>? onError = null)
+    public Task RequestUserInfo(Action<int, string?>? onError = null)
     {
-        // 在途保护：已有请求则跳过本次轮询
-        if (Interlocked.Exchange(ref _inFlight, 1) == 1)
-        {
-            return;
-        }
-
-        try
-        {
-            var token = ConfigFile.GetValue<string>("account_token");
-            if (token is { Length: > 0 })
-            {
-                var httpClient = httpClientFactory.CreateClient(HttpClientExtensions.LeigodClientName);
-                var payload = new JsonObject
+        return PostLeigodAsync(
+            token => (
+                Info_url,
+                new StringContent(new JsonObject
                 {
                     { "account_token", token },
                     { "lang", "zh_CN" },
                     { "os_type", 4 },
-                }.ToJsonString();
-
-                var postMessage = await httpClient.PostAsync(Info_url, new StringContent(payload)).ConfigureAwait(false);
-                postMessage.EnsureSuccessStatusCode();
-                var jsonStr = await postMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var jsonObject = JsonNode.Parse(jsonStr) as JsonObject;
-                var data = jsonObject?["data"] as JsonObject ?? jsonObject;
-
-                if (data is { Count: > 0 })
-                {
-                    if (_uiContext != null)
-                    {
-                        _uiContext.Post(_ => ApplyFields(data), null);
-                    }
-                    else
-                    {
-                        ApplyFields(data);
-                    }
-                }
-                else
-                {
-                    var code = jsonObject?["code"]?.GetValue<int>();
-                    var msg = jsonObject?["msg"]?.GetValue<string>();
-                    if (code != null && code != 0)
-                    {
-                        if (_uiContext != null)
-                        {
-                            _uiContext.Post(_ => onError?.Invoke((int)code, msg), null);
-                        }
-                        else
-                        {
-                            onError?.Invoke((int)code, msg);
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "用户信息获取失败");
-        }
-        finally
-        {
-            Interlocked.Exchange(ref _inFlight, 0);
-        }
+                }.ToJsonString())),
+            jsonObject => HandleInfoResult(jsonObject, onError),
+            onError,
+            "用户信息获取失败");
     }
 
     // 统一切回 UI 线程写绑定属性，避免跨线程更新 DependencyProperty
@@ -132,9 +82,30 @@ public partial class LeigodCoreModel : ObservableObject
         PauseStatusId = data?["pause_status_id"]?.GetValue<int>();
     }
 
-    public async Task SendPauseState(Action<int, string?>? onError = null)
+    public Task SendPauseState(Action<int, string?>? onError = null)
     {
-        // 在途保护：已有请求则跳过本次轮询
+        // https://webapi.leigod.com/api/user/pause?os_type=5&account_token=xxxx&region_code=1&src_channel=guanwang&lang=zh_CN
+        return PostLeigodAsync(
+            token => (
+                $"{Pause_url}?os_type={4}&account_token={token}&region_code={1}&src_channel=guanwang&lang=zh_CN",
+                new StringContent("{}")),
+            jsonObject => RaiseError(jsonObject, onError),
+            onError,
+            "暂停调用失败");
+    }
+
+    /// <summary>
+    /// 统一的接口调用骨架：在途保护、token 校验、构造并发送请求、解析、分发结果、异常日志。
+    /// requestFactory 用最新 token 构造 (url, content)；handleResult 收到解析成功的根 JSON，
+    /// 由各调用方决定成功/错误如何处理；onError 在网络/传输层错误时以 -1 回调。
+    /// </summary>
+    private async Task PostLeigodAsync(
+        Func<string, (string url, HttpContent content)> requestFactory,
+        Action<JsonObject> handleResult,
+        Action<int, string?>? onError,
+        string errorLogMessage)
+    {
+        // 在途保护：已有请求未完成则跳过本次
         if (Interlocked.Exchange(ref _inFlight, 1) == 1)
         {
             return;
@@ -145,35 +116,71 @@ public partial class LeigodCoreModel : ObservableObject
             var token = ConfigFile.GetValue<string>("account_token");
             if (token is { Length: > 0 })
             {
+                var (url, content) = requestFactory(token);
                 var httpClient = httpClientFactory.CreateClient(HttpClientExtensions.LeigodClientName);
-                // https://webapi.leigod.com/api/user/pause?os_type=5&account_token=xxxx&region_code=1&src_channel=guanwang&lang=zh_CN
-                string urlQuery = $"{Pause_url}?os_type={4}&account_token={token}&region_code={1}&src_channel=guanwang&lang=zh_CN";
-                var postMessage = await httpClient.PostAsync(urlQuery, new StringContent("{}")).ConfigureAwait(false);
-                postMessage.EnsureSuccessStatusCode();
-                var jsonStr = await postMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var jsonObject = JsonNode.Parse(jsonStr) as JsonObject;
-                var code = jsonObject?["code"]?.GetValue<int>();
-                var msg = jsonObject?["msg"]?.GetValue<string>();
-                if (code != null && code != 0)
+                var response = await httpClient.PostAsync(url, content).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+                var jsonStr = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                if (JsonNode.Parse(jsonStr) is JsonObject jsonObject)
                 {
-                    if (_uiContext != null)
-                    {
-                        _uiContext.Post(_ => onError?.Invoke((int)code, msg), null);
-                    }
-                    else
-                    {
-                        onError?.Invoke((int)code, msg);
-                    }
+                    handleResult(jsonObject);
                 }
             }
         }
+        catch (HttpRequestException e)
+        {
+            // 网络/传输层错误（连接失败、超时、非 2xx 等）：记录日志并回调 onError
+            logger.LogError(e, errorLogMessage);
+            InvokeOnUi(() => onError?.Invoke(-1, e.Message));
+        }
         catch (Exception e)
         {
-            logger.LogError(e, "暂停调用失败");
+            logger.LogError(e, errorLogMessage);
         }
         finally
         {
             Interlocked.Exchange(ref _inFlight, 0);
+        }
+    }
+
+    // user/info：取到用户信息则写属性，否则按错误码回调
+    private void HandleInfoResult(JsonObject jsonObject, Action<int, string?>? onError)
+    {
+        // 优先取 data 内层，扁平结构（无 data 包裹）时退化为根节点
+        var data = jsonObject["data"] as JsonObject ?? jsonObject;
+
+        if (data is { Count: > 0 })
+        {
+            InvokeOnUi(() => ApplyFields(data));
+            return;
+        }
+
+        RaiseError(jsonObject, onError);
+    }
+
+    // code != 0 时通过 onError 回调上报（自动切回 UI 线程）
+    private void RaiseError(JsonObject jsonObject, Action<int, string?>? onError)
+    {
+        var code = jsonObject["code"]?.GetValue<int>();
+        if (code is null || code == 0)
+        {
+            return;
+        }
+
+        var msg = jsonObject["msg"]?.GetValue<string>();
+        InvokeOnUi(() => onError?.Invoke(code.Value, msg));
+    }
+
+    // 统一切回 UI 线程执行，避免跨线程更新 DependencyProperty
+    private void InvokeOnUi(Action action)
+    {
+        if (_uiContext != null)
+        {
+            _uiContext.Post(_ => action(), null);
+        }
+        else
+        {
+            action();
         }
     }
 }
