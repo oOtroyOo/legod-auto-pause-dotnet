@@ -72,20 +72,6 @@ ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=932 name="日本語 (�
     }
 
     [Test]
-    public async Task TestBuffer()
-    {
-        var data = new ProtoLib() { Message = "Hello", Seq = 1 };
-        var data2 = new ProtoLib() { Message = "World", Seq = 2 };
-        var encoder = new ProtobufMsgEncoder(null);
-        Pipe pipe = new Pipe();
-        Console.WriteLine(await encoder.Encode(pipe.Writer, data));
-        Console.WriteLine(await encoder.Encode(pipe.Writer, data2));
-
-        Console.WriteLine((await encoder.Decode<ProtoLib>(pipe.Reader)).Message);
-        Console.WriteLine((await encoder.Decode<ProtoLib>(pipe.Reader)).Message);
-    }
-
-    [Test]
     public void AllIP()
     {
         foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
@@ -134,31 +120,6 @@ ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=932 name="日本語 (�
         {
             Console.WriteLine(address);
         }
-    }
-
-    [Test]
-    public async Task TestUpdClient()
-    {
-        var endpoint = new IPEndPoint(IPAddress.Any, NetworkServer.UdpPort);
-        using var udpClient = new UdpClient(endpoint);
-        using var channel = new PipeChannel(CancellationToken.None, null);
-        channel.AddSocket(udpClient.Client);
-        var protobufMsgEncoder = new ProtobufMsgEncoder(null);
-        var receiveResult = await protobufMsgEncoder.Decode<ProtoLib>(channel.Receive.Reader);
-        Console.WriteLine(receiveResult.Ping?.pingTime);
-    }
-
-
-    [Test]
-    public async Task TestUpdClientV6()
-    {
-        var endpoint = new IPEndPoint(IPAddress.IPv6Any, NetworkServer.UdpPort);
-        using var udpClient = new UdpClient(endpoint);
-        using var channel = new PipeChannel(CancellationToken.None, null);
-        channel.AddSocket(udpClient.Client);
-        var protobufMsgEncoder = new ProtobufMsgEncoder(null);
-        var receiveResult = await protobufMsgEncoder.Decode<ProtoLib>(channel.Receive.Reader);
-        Console.WriteLine(receiveResult.Ping?.pingTime);
     }
 }
 

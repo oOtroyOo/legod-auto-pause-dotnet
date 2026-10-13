@@ -7,17 +7,15 @@ namespace LeigodPause.Service;
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
-    private readonly NetworkServer _networkServer;
 
-    public Worker(ILogger<Worker> logger, NetworkServer networkServer)
+    public Worker(ILogger<Worker> logger)
     {
         _logger = logger;
-        _networkServer = networkServer;
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        _networkServer.Start(cancellationToken);
+        _logger.LogInformation("games: {games}", ConfigFile.GetValue<string>("games"));
         await base.StartAsync(cancellationToken);
     }
 
@@ -27,11 +25,11 @@ public class Worker : BackgroundService
         {
             if (_logger.IsEnabled(LogLevel.Information))
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                _logger.LogInformation("Worker running at: {time:yyyyMMdd HH:mm:ss}", DateTimeOffset.Now);
             }
 
-         
-            await Task.Delay(1000, stoppingToken);
+
+            await Task.Delay(5000, stoppingToken);
         }
     }
 }

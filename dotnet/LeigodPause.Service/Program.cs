@@ -1,9 +1,5 @@
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
 using LeigodPause.Service.Api;
-using LeigodPause.Service.Network;
-using LeigodPause.Service.Proto;
 
 namespace LeigodPause.Service;
 
@@ -18,7 +14,7 @@ public class Program
     {
         AttachConsole(-1);
 #if NETCOREAPP
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 #endif
 
         if (Array.IndexOf(args, "-i") > -1 || Array.IndexOf(args, "--install") > -1)
@@ -43,11 +39,21 @@ public class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
         builder.Services
+            .AddLogging(loggingBuilder =>
+            {
+                loggingBuilder.AddConsole();
+                loggingBuilder.AddProvider(new FileLoggerProvider(GetLogFilePath()));
+            })
             .AddHostedService<Worker>()
-            .AddSingleton<NetworkServer>()
             .AddLeigodHttpClient()
             .AddWindowsService();
         AppHost = builder.Build();
         return AppHost;
+    }
+
+    // 每次启动生成一个带时间戳的日志文件：<exe目录>/log/yyyyMMdd-HHmmss.txt
+    private static string GetLogFilePath()
+    {
+        return Path.Combine(AppContext.BaseDirectory, "log", $"{DateTime.Now:yyyyMMdd-HHmmss}.txt");
     }
 }
