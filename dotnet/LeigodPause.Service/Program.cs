@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using LeigodPause.Service.Api;
 using LeigodPause.Service.Ipc;
 using LeigodPause.Service.Models;
+using LeigodPause.Service.Network;
 
 namespace LeigodPause.Service;
 
@@ -44,20 +45,18 @@ public class Program
             .AddLogging(loggingBuilder =>
             {
                 loggingBuilder.AddConsole();
-                loggingBuilder.AddProvider(new FileLoggerProvider(GetLogFilePath()));
+#if DEBUG
+                loggingBuilder.AddProvider(new FileLoggerProvider());
+#endif
             })
             .AddHostedService<Worker>()
             .AddLeigodHttpClient()
             .AddSingleton<LeigodCoreModel>()
             .AddSingleton<ServiceIpcServer>()
+            .AddSingleton<ProtobufMsgEncoder>()
             .AddWindowsService();
         AppHost = builder.Build();
         return AppHost;
     }
 
-    // 每次启动生成一个带时间戳的日志文件：<exe目录>/log/yyyyMMdd-HHmmss.txt
-    private static string GetLogFilePath()
-    {
-        return Path.Combine(AppContext.BaseDirectory, "log", $"{DateTime.Now:yyyyMMdd-HHmmss}.txt");
-    }
 }

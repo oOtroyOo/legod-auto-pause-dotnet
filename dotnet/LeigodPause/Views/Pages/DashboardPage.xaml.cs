@@ -10,12 +10,16 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Input;
+using LeigodPause.Ipc;
 using LeigodPause.Models;
 using LeigodPause.Service;
 using LeigodPause.Service.Api;
+using LeigodPause.Service.Ipc;
 using LeigodPause.Service.Models;
 using LeigodPause.Service.Proto;
 using LeigodPause.Utilities;
@@ -49,6 +53,7 @@ public partial class DashboardPage : INotifyPropertyChanged
     public LeigodCoreModel LeigodCoreModel { get; } = App.Host.Services.GetRequiredService<LeigodCoreModel>();
 
     private ILogger<DashboardPage> logger = App.Host.Services.GetRequiredService<ILogger<DashboardPage>>();
+    private ServiceIpcClient _ipcClient = App.Host.Services.GetRequiredService<ServiceIpcClient>();
 
     public DashboardPage()
     {
@@ -84,24 +89,7 @@ public partial class DashboardPage : INotifyPropertyChanged
 
         OnPropertyChanged(nameof(RunningBtnVisible));
 
-        if (DateTimeOffset.Now - lastInfoTime > TimeSpan.FromSeconds(5))
-        {
-            if (LeigodCoreModel.Token is { Length: > 0 })
-            {
-                await LeigodCoreModel.RequestUserInfo((i, s) =>
-                {
-                    LeigodCoreModel.Token = null;
-                    var messageBox = new Wpf.Ui.Controls.MessageBox
-                    {
-                        Content = i + "\n" + s,
-                        Title = "用户登录失效", 
-                        CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
-                    };
-                    messageBox.ShowDialogAsync();
-                }).ConfigureAwait(false);
-                lastInfoTime = DateTimeOffset.Now;
-            }
-        }
+
     }
 
     private void OnBaseButtonClick(object sender, RoutedEventArgs e)
@@ -345,9 +333,9 @@ public partial class DashboardPage : INotifyPropertyChanged
                     var boxResult = await messageBox.ShowDialogAsync();
                     Clipboard.SetDataObject(token);
 
-
-                    await LeigodCoreModel.RequestUserInfo()
-                        .ContinueWith(t => this.Dispatcher.InvokeAsync(() => OnPropertyChanged(nameof(LeigodCoreModel))));
+                    //
+                    // await LeigodCoreModel.RequestUserInfo()
+                    //     .ContinueWith(t => this.Dispatcher.InvokeAsync(() => OnPropertyChanged(nameof(LeigodCoreModel))));
                 });
             }
             else

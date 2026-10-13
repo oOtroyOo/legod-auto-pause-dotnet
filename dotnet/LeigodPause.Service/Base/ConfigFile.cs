@@ -16,6 +16,7 @@ public class ConfigFile
 
     private static readonly FileIniDataParser _parser = new FileIniDataParser();
     private static IniData _data = Load();
+    public static event Action OnSave;
 
     private static IniData Load()
     {
@@ -57,5 +58,11 @@ public class ConfigFile
         EnsureSection();
         _data[Section][key] = value?.ToString();
         _parser.WriteFile(FilePath, _data, Encoding.UTF8);
+        OnSave?.Invoke();
+    }
+
+    public static void Reload()
+    {
+        _data = Load();
     }
 }

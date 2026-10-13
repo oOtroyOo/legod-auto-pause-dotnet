@@ -6,13 +6,18 @@
 using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using LeigodPause.Ipc;
 using LeigodPause.Models;
 using LeigodPause.Service;
 using LeigodPause.Service.Api;
+using LeigodPause.Service.Ipc;
 using LeigodPause.Service.Models;
+using LeigodPause.Service.Network;
+using LeigodPause.Service.Proto;
 using LeigodPause.Views;
 using LeigodPause.Views.Pages;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,11 +52,12 @@ public partial class App
             builder.AddConsole()
         )
         .ConfigureServices((context, services) =>
-        {
-            services.AddLeigodHttpClient();
-            services.AddSingleton<MainView>();
-            services.AddSingleton<LeigodCoreModel>();
-        }).Build();
+            services.AddLeigodHttpClient()
+                .AddSingleton<MainView>()
+                .AddSingleton<LeigodCoreModel>()
+                .AddSingleton<ServiceIpcClient>()
+                .AddSingleton<ProtobufMsgEncoder>()
+        ).Build();
 
     /// <summary>
     /// Occurs when the application is loading.
@@ -67,6 +73,11 @@ public partial class App
         SystemTheme systemTheme = Wpf.Ui.Appearance.ApplicationThemeManager.GetSystemTheme();
         Wpf.Ui.Appearance.ApplicationThemeManager.Apply(systemTheme == SystemTheme.Dark ? ApplicationTheme.Dark : ApplicationTheme.Light);
         // Wpf.Ui.Appearance.ApplicationThemeManager.Apply(GetWindowsTheme());
+
+        var ipcClient = Host.Services.GetRequiredService<ServiceIpcClient>();
+        Task.Run(ipcClient.Connect);
+
+        ConfigFile.OnSave += () => { _ = ipcClient.SendAsync(new IpcEnvelope() { Command = ServiceCommand.ReloadConfig }); };
     }
 
     /// <summary>

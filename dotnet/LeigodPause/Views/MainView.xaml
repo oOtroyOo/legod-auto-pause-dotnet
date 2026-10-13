@@ -19,6 +19,7 @@
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Closing="MainView_OnClosing"
+    Loaded="MainView_OnLoaded"
     ExtendsContentIntoTitleBar="True"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">

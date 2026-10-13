@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 
 namespace LeigodPause.Service.Api;
@@ -10,16 +11,19 @@ public sealed class FileLoggerProvider : ILoggerProvider
     private readonly StreamWriter _writer;
     private readonly object _gate = new();
 
-    public FileLoggerProvider(string filePath)
+    public FileLoggerProvider()
     {
+        var processName = Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName);
+        string filePath = Path.Combine(AppContext.BaseDirectory, "log",
+            $"{processName}{DateTime.Now:yyyyMMdd-HHmmss}.txt");
         var fullPath = Path.GetFullPath(filePath);
         var dir = Path.GetDirectoryName(fullPath);
         if (!string.IsNullOrEmpty(dir))
         {
             Directory.CreateDirectory(dir);
-            foreach (var s in Directory.GetFiles(dir, "*.txt"))
+            foreach (var s in Directory.GetFiles(dir, $"{processName}*.txt"))
             {
-                if (DateTime.Now - new FileInfo(s).CreationTime > TimeSpan.FromDays(5))
+                if (true) //DateTime.Now - new FileInfo(s).CreationTime > TimeSpan.FromDays(5))
                 {
                     try
                     {

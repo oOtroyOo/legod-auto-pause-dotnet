@@ -6,8 +6,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <InvariantGlobalization>true</InvariantGlobalization>
         <UserSecretsId>dotnet-WorkerService1-12213d12-a590-48ab-a209-1c9ec9239035</UserSecretsId>
-        <TargetFrameworks Condition="$(IsUnifiedNETVersion) == 'true'">$(TargetFrameworks);net9.0</TargetFrameworks>
-        <TargetFrameworks Condition="$(IsUnifiedNETVersion) == 'false'">$(TargetFrameworks);net9.0-windows</TargetFrameworks>
+<!--        <TargetFrameworks Condition="$(IsUnifiedNETVersion) == 'true'">$(TargetFrameworks);net9.0</TargetFrameworks>-->
+<!--        <TargetFrameworks Condition="$(IsUnifiedNETVersion) == 'false'">$(TargetFrameworks);net9.0-windows</TargetFrameworks>-->
         <UseWindowsForms Condition="$(IsUnifiedNETVersion) == 'false'">true</UseWindowsForms>
 
         <GenerateProgramFile>false</GenerateProgramFile>
@@ -34,6 +34,7 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices"/>
         <PackageReference Include="Microsoft.Extensions.Http"/>
+        <PackageReference Include="protobuf-net"/>
         <Reference Include="System.Net.Http"/>
     </ItemGroup>
     
