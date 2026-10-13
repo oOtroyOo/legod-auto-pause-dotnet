@@ -1,5 +1,7 @@
 using System.Runtime.InteropServices;
 using LeigodPause.Service.Api;
+using LeigodPause.Service.Ipc;
+using LeigodPause.Service.Models;
 
 namespace LeigodPause.Service;
 
@@ -46,6 +48,8 @@ public class Program
             })
             .AddHostedService<Worker>()
             .AddLeigodHttpClient()
+            .AddSingleton<LeigodCoreModel>()
+            .AddSingleton<ServiceIpcServer>()
             .AddWindowsService();
         AppHost = builder.Build();
         return AppHost;
