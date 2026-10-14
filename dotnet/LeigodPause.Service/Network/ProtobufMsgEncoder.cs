@@ -4,6 +4,9 @@ public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
 {
     private readonly MemoryStream _serializeStream = new MemoryStream();
 
+    // 消息体长度上限，防止恶意/错误长度导致 ArgumentOutOfRange 或 OOM。
+    private const int MaxMessageSize = 16 * 1024 * 1024; // 16MB
+
 
     private static async Task<byte[]> ReadExactAsync(PipeStream pipe, int count, CancellationToken token)
     {
@@ -23,7 +26,7 @@ public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
         return buf;
     }
 
-    public async Task<int> Encode<T>(PipeStream pipe, T msgObj, CancellationToken token)
+    public async Task Encode<T>(PipeStream pipe, T msgObj, CancellationToken token)
     {
         try
         {
@@ -37,8 +40,6 @@ public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
             await pipe.WriteAsync(BitConverter.GetBytes(bodyBuffer.Length), 0, 4, token).ConfigureAwait(false);
             await pipe.WriteAsync(bodyBuffer, 0, bodyBuffer.Length, token).ConfigureAwait(false);
             await pipe.FlushAsync(token).ConfigureAwait(false);
-            // writer.Advance(bodyBuffer.Length + 8);
-            return bodyBuffer.Length + 4;
         }
         catch (Exception e)
         {
@@ -60,8 +61,19 @@ public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
         {
             var lenBuf = await ReadExactAsync(pipe, 4, token).ConfigureAwait(false);
             var len = BitConverter.ToInt32(lenBuf, 0);
+            // 防护：负长度或超大长度都会导致 ArgumentOutOfRange / OOM，直接拒绝。
+            if (len < 0 || len > MaxMessageSize)
+            {
+                throw new InvalidDataException($"IPC 消息长度越界: {len}");
+            }
+
             var body = await ReadExactAsync(pipe, len, token).ConfigureAwait(false);
             return ProtoBuf.Serializer.Deserialize<T>(body);
+        }
+        catch (Exception e)
+        {
+            logger?.LogError(e, "Decode failed");
+            throw;
         }
         finally
         {

@@ -9,7 +9,7 @@ public class CustomServiceLifetime(
 {
     private ILogger<CustomServiceLifetime> logger = loggerFactory.CreateLogger<CustomServiceLifetime>();
 
-    public event Action OnShutdownEvents;
+    public event Action? OnShutdownEvents;
 
     protected override void OnShutdown()
     {

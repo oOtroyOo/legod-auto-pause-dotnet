@@ -17,7 +17,6 @@ public partial class DashboardPage : INotifyPropertyChanged
 
     private int _counter = 0;
 
-    private DateTimeOffset lastInfoTime = DateTimeOffset.MinValue;
 
     private const string leigodLoginUrl = "https://www.leigod.com/mlogin";
     // "https://www.leigod.com/m/mlogin.html?region_code=1&language=zh_CN&platform=2";
@@ -45,12 +44,46 @@ public partial class DashboardPage : INotifyPropertyChanged
         appMainWindow.Closing += AppMainWindowOnClosing;
     }
 
+    private CancellationTokenSource? _pollCts;
+
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        var timer = new Timer(1000);
-        timer.Elapsed += (s, e) => { Dispatcher.Invoke(UpdateTimer); };
-        timer.Start();
-        _ = UpdateTimer();
+        // 去掉 Timer：改为「任务完成后等待间隔再循环」，避免 Dispatcher.Invoke 的委托参数错配。
+        _pollCts = new CancellationTokenSource();
+        _ = PollLoopAsync(_pollCts.Token);
+    }
+
+    private async Task PollLoopAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            try
+            {
+                await UpdateTimer();
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "更新运行状态失败");
+            }
+
+            if (token.IsCancellationRequested)
+            {
+                break;
+            }
+
+            try
+            {
+                await Task.Delay(1000, token);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
     }
 
     private async Task UpdateTimer()
@@ -62,8 +95,6 @@ public partial class DashboardPage : INotifyPropertyChanged
         }
 
         OnPropertyChanged(nameof(RunningBtnVisible));
-
-
     }
 
     private void OnBaseButtonClick(object sender, RoutedEventArgs e)
@@ -192,6 +223,7 @@ public partial class DashboardPage : INotifyPropertyChanged
 
     private async void AppMainWindowOnClosing(object sender, CancelEventArgs e)
     {
+        _pollCts?.Cancel();
         var appWindow = ((Window)sender);
         if (WebView?.IsInitialized == true)
         {
@@ -348,7 +380,7 @@ public partial class DashboardPage : INotifyPropertyChanged
                 Title = "暂停调用失败",
                 CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
             };
-            messageBox.ShowDialogAsync();
+            return messageBox.ShowDialogAsync();
         });
     }
 }

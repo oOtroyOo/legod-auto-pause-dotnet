@@ -13,9 +13,9 @@ public enum ServiceCommand
 {
     None = 0,
     Ping,
-    StartPause,
-    StopPause,
+    PauseState,
     RefreshUserInfo,
+    FindGameProcess,
     ReloadConfig,
     Exit,
 }

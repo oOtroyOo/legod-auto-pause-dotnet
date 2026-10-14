@@ -27,14 +27,9 @@
         </Grid.ColumnDefinitions>
 
         <!-- 左侧：Dashboard -->
-        <Grid Grid.Column="0" Margin="12" VerticalAlignment="Top">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0" Margin="5"
+        <StackPanel Grid.Column="0" Margin="12" VerticalAlignment="Top">
+
+            <StackPanel Margin="5"
                         Orientation="Horizontal">
                 <Label Content="系统服务状态：" VerticalAlignment="Center"></Label>
                 <ui:TextBlock x:Name="RunningTextBlock" Text="{Binding IsRunningText}" VerticalAlignment="Center" />
@@ -50,9 +45,9 @@
                 </ui:Button>
 
             </StackPanel>
-            <StackPanel Grid.Row="1"
-                        Margin="5"
-                        Orientation="Horizontal">
+            <StackPanel
+                Margin="5"
+                Orientation="Horizontal">
                 <ui:Button
                     Margin="0,0,4,0"
                     Icon="{ui:SymbolIcon CommentCheckmark48}"
@@ -70,9 +65,9 @@
                     Margin="12,0,0,0"
                     VerticalAlignment="Center" />
             </StackPanel>
-            <StackPanel Grid.Row="2"
-                        Margin="5"
-                        Orientation="Horizontal">
+            <StackPanel
+                Margin="5"
+                Orientation="Horizontal">
                 <ui:TextBlock Text="昵称"
                               Margin="3"
                               VerticalAlignment="Center">
@@ -82,9 +77,9 @@
                               VerticalAlignment="Center">
                 </ui:TextBlock>
             </StackPanel>
-            <StackPanel Grid.Row="3"
-                        Margin="5"
-                        Orientation="Horizontal">
+            <StackPanel
+                Margin="5"
+                Orientation="Horizontal">
                 <ui:TextBlock Text="暂停状态"
                               Margin="3"
                               VerticalAlignment="Center">
@@ -100,7 +95,19 @@
                     Visibility="{Binding LeigodCoreModel.IsNotPaused, Converter={StaticResource BooleanToVisibilityConverter}}"
                     Click="PauseBtn_Click" />
             </StackPanel>
-        </Grid>
+            <StackPanel
+                Margin="5"
+                Orientation="Horizontal">
+                <ui:TextBlock Text="游戏进程"
+                              Margin="3"
+                              VerticalAlignment="Center">
+                </ui:TextBlock>
+                <ui:TextBlock Text="{Binding LeigodCoreModel.MatchedGameProcess}"
+                              Margin="3"
+                              VerticalAlignment="Center">
+                </ui:TextBlock>
+            </StackPanel>
+        </StackPanel>
 
         <!-- 右侧：WebView -->
         <Grid Grid.Column="1">

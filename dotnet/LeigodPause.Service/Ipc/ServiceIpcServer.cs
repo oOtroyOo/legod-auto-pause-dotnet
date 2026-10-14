@@ -5,20 +5,22 @@ using System.Security.Principal;
 
 namespace LeigodPause.Service.Ipc;
 
-public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<ServiceIpcServer>? logger, ProtobufMsgEncoder protobufMsgEncoder)
+public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<ServiceIpcServer> logger, ProtobufMsgEncoder protobufMsgEncoder)
 {
     private readonly CancellationTokenSource _cts = new();
+    private Task? _listenTask;
 
     public void Start()
     {
-        logger?.LogInformation("IPC pipe server starting on {PipeName}", IpcPipeNames.CommandPipe);
-        _ = ListenLoopAsync(_cts.Token);
+        logger.LogInformation("IPC pipe server starting on {PipeName}", IpcPipeNames.CommandPipe);
+        _listenTask = ListenLoopAsync(_cts.Token);
     }
 
-    public void Stop()
+    public Task Stop()
     {
-        logger?.LogInformation("IPC pipe server stopping");
+        logger.LogInformation("IPC pipe server stopping");
         _cts.Cancel();
+        return _listenTask ?? Task.CompletedTask;
     }
 
     private async Task ListenLoopAsync(CancellationToken token)
@@ -44,12 +46,12 @@ public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<Se
             catch (Exception e)
             {
                 pipe.Dispose();
-                logger?.LogError(e, "Named pipe wait-connection failed");
+                logger.LogError(e, "Named pipe wait-connection failed");
                 continue;
             }
 
-            logger?.LogInformation("IPC client connected on {PipeName}", IpcPipeNames.CommandPipe);
-            _ = HandleClientAsync(pipe, token);
+            logger.LogInformation("IPC client connected on {PipeName}", IpcPipeNames.CommandPipe);
+            await HandleClientAsync(pipe, token);
         }
     }
 
@@ -57,38 +59,65 @@ public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<Se
     {
         try
         {
-            var command = await protobufMsgEncoder.Decode<IpcEnvelope>(pipe, token).ConfigureAwait(false);
-            logger?.LogInformation("IPC command received: {Command}", command.Command);
+            // 保持连接：一条连接循环处理多条指令，直到客户端断开或服务停止，
+            while (!token.IsCancellationRequested)
+            {
+                IpcEnvelope command;
+                try
+                {
+                    command = await protobufMsgEncoder.Decode<IpcEnvelope>(pipe, token).ConfigureAwait(false);
+                }
+                catch (EndOfStreamException)
+                {
+                    // 客户端断开：读取到 0 字节
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e, "IPC 读取失败，关闭该连接");
+                    break;
+                }
 
-            var result = await DispatchAsync(command).ConfigureAwait(false);
-            await protobufMsgEncoder.Encode(pipe, result, token).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            logger?.LogError(e, "Named pipe command handling failed");
+                logger.LogInformation("IPC command received: {Command}", command.Command);
+
+                var result = await DispatchAsync(command).ConfigureAwait(false);
+                await protobufMsgEncoder.Encode(pipe, result, token).ConfigureAwait(false);
+            }
         }
         finally
         {
             pipe.Dispose();
-            logger?.LogDebug("IPC client disconnected");
+            logger.LogDebug("IPC client disconnected");
         }
     }
 
     private async Task<IpcEnvelope> DispatchAsync(IpcEnvelope cmd)
     {
-        var (code, msg, data) = cmd.Command switch
+        try
         {
-            ServiceCommand.Ping => (0, null, (byte[]?)null),
-            ServiceCommand.RefreshUserInfo => await DoRefreshAsync(),
-            ServiceCommand.StartPause => await DoPauseAsync(),
-            ServiceCommand.StopPause => (-2, "Not implemented: resume pause", (byte[]?)null),
-            ServiceCommand.ReloadConfig => await DoReloadConfig(),
-            ServiceCommand.Exit => (0, (string?)null, (byte[]?)null),
-            _ => (-2, "Unknown command", null),
-        };
-
-        return new IpcEnvelope { Command = cmd.Command, Code = code, Msg = msg, Payload = data };
+            var (code, msg, data) = cmd.Command switch
+            {
+                ServiceCommand.Ping => (0, null, (byte[]?)null),
+                ServiceCommand.RefreshUserInfo => await DoRefreshAsync(),
+                ServiceCommand.PauseState => await DoPauseAsync(),
+                ServiceCommand.ReloadConfig => await DoReloadConfig(),
+                ServiceCommand.FindGameProcess => await DoFindGameProcess(),
+                ServiceCommand.Exit => (0, (string?)null, (byte[]?)null),
+                _ => (-2, "Unknown command", null),
+            };
+            return new IpcEnvelope { Command = cmd.Command, Code = code, Msg = msg, Payload = data };
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Command handling failed");
+            return new IpcEnvelope { Command = cmd.Command, Code = -1, Msg = e.GetType().Name + ":" + e.Message };
+        }
     }
+
 
     private async Task<(int Code, string? Msg, byte[]? Data)> DoReloadConfig()
     {
@@ -103,43 +132,61 @@ public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<Se
         int? errCode = null;
         string? errMsg = null;
 
-        if (LastUserInfoError == null && leigodCoreModel.UserInfoJson == null || leigodCoreModel.RequestInfoTimeout)
+        bool needRefresh = LastUserInfoError == null && leigodCoreModel.UserInfoJson == null || leigodCoreModel.RequestInfoTimeout;
+        if (needRefresh)
         {
             await leigodCoreModel.RequestUserInfo((c, m) =>
             {
                 errCode = c;
                 errMsg = m;
                 LastUserInfoError = new IpcEnvelope() { Command = ServiceCommand.RefreshUserInfo, Code = c, Msg = m };
+                return Task.CompletedTask;
             });
         }
-        else if (LastUserInfoError != null)
-        {
-            errMsg = LastUserInfoError.Msg;
-            errCode = LastUserInfoError.Code;
-        }
 
+        // 本次刷新返回明确错误：直接上报错误（保留 LastUserInfoError 不变）
         if (errCode is { } code && code != 0)
         {
             return (code, errMsg, null);
         }
 
-        var json = JsonSerializer.Serialize(leigodCoreModel.UserInfoJson, new JsonSerializerOptions
+        // 已有有效用户信息：清除历史错误，避免误报“登录失效”并清空 Token
+        if (leigodCoreModel.UserInfoJson != null)
         {
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-            WriteIndented = false
-        });
-        return (0, null, Encoding.UTF8.GetBytes(json));
+            LastUserInfoError = null;
+            var json = JsonSerializer.Serialize(leigodCoreModel.UserInfoJson, new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                WriteIndented = false
+            });
+            return (0, null, Encoding.UTF8.GetBytes(json));
+        }
+
+        // 既无新错误也无缓存：回退到历史错误（若有）
+        if (LastUserInfoError != null)
+        {
+            return (LastUserInfoError.Code, LastUserInfoError.Msg, null);
+        }
+
+        return (0, null, null);
     }
 
     private async Task<(int Code, string? Msg, byte[]? Data)> DoPauseAsync()
     {
         int? errCode = null;
         string? errMsg = null;
-        await leigodCoreModel.SendPauseState((c, m) =>
+        var executed = await leigodCoreModel.SendPauseState((c, m) =>
         {
             errCode = c;
             errMsg = m;
+            return Task.CompletedTask;
         });
+
+        // 在途跳过：明确告知客户端“请求进行中”，而非伪装成功
+        if (!executed)
+        {
+            return (-100, "请求进行中，已跳过", null);
+        }
 
         if (errCode is { } code && code != 0)
         {
@@ -149,103 +196,14 @@ public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<Se
         return (0, null, null);
     }
 
-    // Apply a permissive DACL (Everyone full control) and a low mandatory-integrity SACL
-    // to the pipe handle. This lets a medium-integrity user-mode client (the WPF app)
-    // connect even when the service runs at System integrity; otherwise ConnectAsync
-    // throws UnauthorizedAccessException ("Access to the path is denied").
-    private static void ApplyPipeSecurity(SafePipeHandle handle)
+    private async Task<(int Code, string? Msg, byte[]? Data)> DoFindGameProcess()
     {
-        // D:(A;;FA;;;WD)  -> DACL: Everyone full access
-        // S:(ML;;NW;;;LW) -> SACL: low integrity label (No-Write-Up)
-        const string sddl = "D:(A;;FA;;;WD)S:(ML;;NW;;;LW)";
-
-        if (!NativeMethods.ConvertStringSecurityDescriptorToSecurityDescriptor(
-                sddl, 1, out var sd, IntPtr.Zero))
+        var gameMsg = await leigodCoreModel.FindGameProcess().ConfigureAwait(false);
+        if (string.IsNullOrEmpty(gameMsg))
         {
-            throw new Win32Exception(Marshal.GetLastWin32Error());
+            return (0, null, null);
         }
 
-        try
-        {
-            if (!NativeMethods.GetSecurityDescriptorDacl(sd, out _, out var pDacl, out _))
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-            }
-
-            if (!NativeMethods.GetSecurityDescriptorSacl(sd, out _, out var pSacl, out _))
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-            }
-
-            var result = NativeMethods.SetSecurityInfo(
-                handle.DangerousGetHandle(),
-                NativeMethods.SeObjectKind.SeKernelObject,
-                NativeMethods.SecurityInformation.Dacl | NativeMethods.SecurityInformation.Sacl,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                pDacl,
-                pSacl);
-
-            if (result != 0)
-            {
-                throw new Win32Exception(result);
-            }
-        }
-        finally
-        {
-            NativeMethods.LocalFree(sd);
-        }
-    }
-
-    private static class NativeMethods
-    {
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool ConvertStringSecurityDescriptorToSecurityDescriptor(
-            string stringSecurityDescriptor,
-            int stringSdRevision,
-            out IntPtr securityDescriptor,
-            IntPtr securityDescriptorSize);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool GetSecurityDescriptorDacl(
-            IntPtr securityDescriptor,
-            [MarshalAs(UnmanagedType.Bool)] out bool daclPresent,
-            out IntPtr dacl,
-            [MarshalAs(UnmanagedType.Bool)] out bool daclDefaulted);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool GetSecurityDescriptorSacl(
-            IntPtr securityDescriptor,
-            [MarshalAs(UnmanagedType.Bool)] out bool saclPresent,
-            out IntPtr sacl,
-            [MarshalAs(UnmanagedType.Bool)] out bool saclDefaulted);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        internal static extern int SetSecurityInfo(
-            IntPtr handle,
-            SeObjectKind objectType,
-            SecurityInformation securityInfo,
-            IntPtr owner,
-            IntPtr group,
-            IntPtr dacl,
-            IntPtr sacl);
-
-        [DllImport("kernel32.dll")]
-        internal static extern IntPtr LocalFree(IntPtr hMem);
-
-        internal enum SeObjectKind
-        {
-            SeKernelObject = 6,
-        }
-
-        [Flags]
-        internal enum SecurityInformation : uint
-        {
-            Dacl = 0x0004,
-            Sacl = 0x0008,
-        }
+        return (0, null, Encoding.UTF8.GetBytes(gameMsg));
     }
 }

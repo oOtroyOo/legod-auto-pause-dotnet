@@ -9,7 +9,7 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
         logger.LogInformation("StopAsync");
         // 注销事件，避免内存泄漏
         SystemEvents.SessionEnding -= OnSessionEnding;
-        ipcServer.Stop();
+        await ipcServer.Stop();
         try
         {
             var hostLifetime = Program.AppHost.Services.GetRequiredService<IHostLifetime>();
@@ -23,7 +23,7 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
             logger.LogError(e, "获取不到Lifetime实例");
         }
 
-        OnEndingAction();
+        await OnEndingActionAsync();
         await base.StopAsync(cancellationToken);
     }
 
@@ -64,23 +64,26 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
                 logger.LogError(e, "Worker error");
             }
 
-            await Task.Delay(5000, stoppingToken);
+            float updateTime = ConfigFile.GetValue<float>("update");
+            if (updateTime < 1) updateTime = 1;
+
+            await Task.Delay((int)(updateTime * 1000), stoppingToken);
         }
 
         logger.LogInformation("ExecuteAsync 的token已取消");
-        OnEndingAction();
+        await OnEndingActionAsync();
     }
 
     private void OnSessionEnding(object sender, SessionEndingEventArgs e)
     {
         logger.LogInformation("OnSessionEnding");
-        OnEndingAction();
+        _ = OnEndingActionAsync();
     }
 
     private void OnHostLifetimeShutdown()
     {
         logger.LogInformation("OnHostLifetimeShutdown");
-        OnEndingAction();
+        _ = OnEndingActionAsync();
     }
 
 /*
@@ -97,12 +100,20 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
 2026-10-14 14:23:07.186 [Information] LeigodPause.Service.Worker: SendPauseState Finish
 */
     /// <summary>
-    /// 关机结束执行
+    /// 关机/登出时执行暂停。非阻塞、带超时，避免 .Wait() 阻塞系统关机流程。
     /// </summary>
-    private void OnEndingAction()
+    private async Task OnEndingActionAsync()
     {
         logger.LogInformation("OnEndingAction");
-        SendPauseState().Wait();
+        try
+        {
+            var pauseTask = SendPauseState();
+            await Task.WhenAny(pauseTask, Task.Delay(3000));
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "OnEndingAction SendPauseState 失败");
+        }
     }
 
     private async Task UpdateTimer()
@@ -110,6 +121,19 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
         if (leigodCoreModel.RequestInfoTimeout)
         {
             await RequestUserInfo();
+            if (leigodCoreModel.IsNotPaused)
+            {
+                var matched = await leigodCoreModel.FindGameProcess();
+                if (string.IsNullOrEmpty(matched) && leigodCoreModel.MachedGameProcessTime != default)
+                {
+                    var loopTime = ConfigFile.GetValue<float>("looptime");
+                    if (loopTime < 1) loopTime = 1;
+                    if (DateTimeOffset.Now - leigodCoreModel.MachedGameProcessTime > TimeSpan.FromSeconds(loopTime))
+                    {
+                        await SendPauseState();
+                    }
+                }
+            }
         }
     }
 
@@ -122,6 +146,7 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
             {
                 // leigodCoreModel.Token = null;
                 ipcServer.LastUserInfoError = new IpcEnvelope() { Command = ServiceCommand.RefreshUserInfo, Code = c, Msg = m };
+                return Task.CompletedTask;
             }).ConfigureAwait(false);
         }
     }
@@ -136,6 +161,7 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
             {
                 // leigodCoreModel.Token = null;
                 ipcServer.LastUserInfoError = new IpcEnvelope() { Command = ServiceCommand.RefreshUserInfo, Code = c, Msg = m };
+                return Task.CompletedTask;
             }).ConfigureAwait(false);
         }
 
