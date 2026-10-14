@@ -1,6 +1,12 @@
 <Project>
     <PropertyGroup>
-
+        <!-- 发布布局开关：dotnet publish 时加 -p:PublishLayout=true 启用 -->
+        <PublishLayout>false</PublishLayout>
+        <!-- 必须留在发布根目录的文件（除 *.exe / *.exe.config / *.ico 外）。
+             分号分隔。默认保留：
+               config.ini        -> ConfigFile 用 AppContext.BaseDirectory 读取，必须在 exe 同级
+               WebView2Loader.dll-> 原生库，LoadLibrary 不会去子目录查找 -->
+        <PublishLayoutKeepFiles Condition="'$(PublishLayoutKeepFiles)' == ''">config.ini;WebView2Loader.dll</PublishLayoutKeepFiles>
     </PropertyGroup>
 
     <Target Name="Test" BeforeTargets="BeforeBuild">
@@ -15,4 +21,68 @@
         <Message Importance="High" Text="'.NETFramework' != $(TargetFrameworkIdentifier) = false" Condition="$(TargetFrameworkIdentifier) != '.NETFramework'"/>
         <Message Importance="High" Text="PublishSingleFile = $(PublishSingleFile) "/>
     </Target>
+
+    <!-- 发布完成后，把除 exe / 其 config / 指定保留文件之外的所有文件移入 lib\（保留子目录结构）。 -->
+    <Target Name="ArrangePublishToLib" AfterTargets="Publish" Condition="'$(PublishLayout)' == 'true'">
+        <PropertyGroup>
+            <_PubDir>$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(PublishDir)'))))</_PubDir>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <_Keep Include="$(_PubDir)*.exe" />
+            <_Keep Include="$(_PubDir)*.exe.config" />
+            <_Keep Include="$(_PubDir)*.ico" />
+            <_Keep Include="$(_PubDir)$(PublishLayoutKeepFiles)" />
+        </ItemGroup>
+
+        <ItemGroup>
+            <!-- 根目录及其子目录下的所有文件 -->
+            <_AllFiles Include="$(_PubDir)**\*" />
+            <!-- 去掉目录项（Move 只处理文件）以及需要保留的文件、lib 目录自身。
+                 卫星资源程序集（*.resources.dll）必须留在应用根目录的文化子目录下，
+                 由 ResourceManager 按文化探测加载，probing privatePath 不会作用于它。 -->
+            <_FilesToMove Include="@(_AllFiles)" Exclude="@(_Keep);$(_PubDir)lib\**\*;$(_PubDir)**\*.resources.dll" />
+            <_FilesToMove Remove="@(_FilesToMove)" Condition="'%(_FilesToMove.Extension)' == ''" />
+        </ItemGroup>
+
+        <MakeDir Directories="$(_PubDir)lib" />
+        <Move SourceFiles="@(_FilesToMove)" DestinationFolder="$(_PubDir)lib\%(RecursiveDir)" />
+
+        <Message Importance="High" Text="[PublishLayout] *.exe 留在根目录，依赖已移入 lib\" />
+    </Target>
+
+    <!-- 把保留文件（按文件名，可能在 lib 任意子目录）搬回发布根目录，供 LoadLibrary / AppContext.BaseDirectory 读取。 -->
+    <Target Name="RestoreKeepFilesToRoot" AfterTargets="Publish" DependsOnTargets="ArrangePublishToLib" Condition="'$(PublishLayout)' == 'true'">
+        <PropertyGroup>
+            <_PubDir>$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(PublishDir)'))))</_PubDir>
+        </PropertyGroup>
+        <ItemGroup>
+            <_KeepName Include="$(PublishLayoutKeepFiles)" />
+            <_KeepFound Include="$(_PubDir)lib\**\%(_KeepName.Identity)" />
+        </ItemGroup>
+        <Move SourceFiles="@(_KeepFound)" DestinationFolder="$(_PubDir)" Condition="'@(_KeepFound)' != ''" />
+    </Target>
+
+    <!-- 为每个根目录的 exe.config 合并 <probing privatePath="lib"/>，
+         保留构建自动生成的 bindingRedirect（System.Memory 等），避免程序集加载失败。
+         若 config 不存在则创建仅含 probing 的最小配置（供 Service.exe 等使用）。
+         用 PowerShell 做 XML 合并：CodeTaskFactory 在 .NET Core 版 MSBuild 上不可用。 -->
+    <Target Name="EnsureLibProbingInExeConfigs" AfterTargets="Publish" DependsOnTargets="ArrangePublishToLib" Condition="'$(PublishLayout)' == 'true'">
+        <PropertyGroup>
+            <_PubDir>$([System.IO.Path]::GetFullPath('$(PublishDir)').TrimEnd('\'))</_PubDir>
+        </PropertyGroup>
+
+        <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(ProjectDir)merge-probing.ps1&quot; -PubDir &quot;$(_PubDir)&quot;" />
+        <Message Importance="High" Text="[PublishLayout] 已在 exe.config 中合并 probing privatePath=lib（保留 bindingRedirect）" />
+    </Target>
+
+    <!-- 清理发布目录中因文件搬移而残留的空目录（runtimes/win-x64/native、zh 等）。 -->
+    <Target Name="CleanEmptyPublishDirs" AfterTargets="Publish" DependsOnTargets="RestoreKeepFilesToRoot;EnsureLibProbingInExeConfigs" Condition="'$(PublishLayout)' == 'true'">
+        <PropertyGroup>
+            <_PubDir>$([System.IO.Path]::GetFullPath('$(PublishDir)').TrimEnd('\'))</_PubDir>
+        </PropertyGroup>
+        <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Get-ChildItem -LiteralPath '$(_PubDir)' -Recurse -Directory | Where-Object { @(Get-ChildItem -LiteralPath $_.FullName -Recurse -File).Length -eq 0 } | Sort-Object { $_.FullName.Length } -Descending | Remove-Item -Force&quot;" />
+        <Message Importance="High" Text="[PublishLayout] 已清理发布目录中的空目录" />
+    </Target>
+
 </Project>

@@ -18,18 +18,18 @@ public sealed class FileLoggerProvider : ILoggerProvider
         if (!string.IsNullOrEmpty(dir))
         {
             Directory.CreateDirectory(dir);
-            foreach (var s in Directory.GetFiles(dir, $"{processName}*.txt"))
+            var files = Directory.GetFiles(dir, $"{processName}*.txt");
+            for (var i = 0; i < files.Length; i++)
             {
-                if (true) //DateTime.Now - new FileInfo(s).CreationTime > TimeSpan.FromDays(5))
+                if (files.Length - i <= 5 && DateTime.Now - new FileInfo(files[i]).CreationTime <= TimeSpan.FromDays(5))
+                    continue;
+                try
                 {
-                    try
-                    {
-                        File.Delete(s);
-                    }
-                    catch
-                    {
-                        //
-                    }
+                    File.Delete(files[i]);
+                }
+                catch
+                {
+                    //
                 }
             }
         }

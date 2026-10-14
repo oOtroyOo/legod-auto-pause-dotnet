@@ -4,7 +4,8 @@
     "LeigodPause.Service": {
       "commandName": "Project",
       "environmentVariables": {
-      }
+      },
+      "workingDirectory": "$(SolutionDir)"
     },
     "LeigodPause.Service -install": {
       "commandName": "Project",

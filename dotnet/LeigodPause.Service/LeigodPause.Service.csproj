@@ -40,13 +40,13 @@
     
 
     <ItemGroup>
-        <Content Include="$(SolutionDir)..\config.ini" Condition="Exists('$(SolutionDir)..\config.ini')">
+        <Content Include="$(SolutionDir)\config.ini">
             <Link>config.ini</Link>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
-    <Target Name="StopPauseService" BeforeTargets="Build">
+    <Target Name="StopPauseService" BeforeTargets="Build" Condition="'$(DisableServiceStop)' != 'true'">
         <Exec Command="powershell -Command &quot;Start-Process sc -ArgumentList 'stop LegodPauseService' -Verb RunAs &quot;"/>
     </Target>
 </Project>

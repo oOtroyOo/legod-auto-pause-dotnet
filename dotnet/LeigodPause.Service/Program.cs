@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Hosting.WindowsServices;
+
 namespace LeigodPause.Service;
 
 public class Program
@@ -43,14 +45,21 @@ public class Program
                 loggingBuilder.AddProvider(new FileLoggerProvider());
 #endif
             })
-            .AddHostedService<Worker>()
             .AddLeigodHttpClient()
             .AddSingleton<LeigodCoreModel>()
             .AddSingleton<ServiceIpcServer>()
             .AddSingleton<ProtobufMsgEncoder>()
-            .AddWindowsService();
+            .AddHostedService<Worker>();
+
+        File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "log/IsWindowsService.txt"), WindowsServiceHelpers.IsWindowsService().ToString());
+        if (WindowsServiceHelpers.IsWindowsService())
+        {
+            builder.Services
+                .AddWindowsService()
+                .AddSingleton<IHostLifetime, CustomServiceLifetime>();
+        }
+
         AppHost = builder.Build();
         return AppHost;
     }
-
 }

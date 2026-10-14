@@ -10,17 +10,23 @@ public class ConfigFile
 {
     const string FileName = "config.ini";
     static string Section => Path.GetFileNameWithoutExtension(FileName);
-    static string FilePath => Path.Combine(AppContext.BaseDirectory, FileName);
+    private static string FilePath => Path.Combine(Environment.CurrentDirectory, FileName); //Path.Combine(AppContext.BaseDirectory, FileName);
 
     private static readonly FileIniDataParser _parser = new FileIniDataParser();
     private static IniData _data = Load();
     public static event Action OnSave;
 
+    private static DateTime lastModifyDate;
+
     private static IniData Load()
     {
         _parser.Parser.Configuration.CommentString = "#";
-        if (File.Exists(FilePath))
+        var fileInfo = new FileInfo(FilePath);
+        if (fileInfo.Exists)
+        {
+            lastModifyDate = fileInfo.LastWriteTime;
             return _parser.ReadFile(FilePath, Encoding.UTF8);
+        }
 
         return new IniData();
     }
@@ -33,6 +39,12 @@ public class ConfigFile
 
     public static T? GetValue<T>(string key)
     {
+        var fileInfo = new FileInfo(FilePath);
+        if (fileInfo.Exists && fileInfo.LastWriteTime > lastModifyDate)
+        {
+            Reload();
+        }
+
         var section = _data.Sections[Section];
         var raw = section?[key];
         if (string.IsNullOrEmpty(raw)) return default;
@@ -57,6 +69,7 @@ public class ConfigFile
         _data[Section][key] = value?.ToString();
         _parser.WriteFile(FilePath, _data, Encoding.UTF8);
         OnSave?.Invoke();
+        lastModifyDate = DateTime.Now;
     }
 
     public static void Reload()
