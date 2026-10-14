@@ -121,17 +121,23 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
         if (leigodCoreModel.RequestInfoTimeout)
         {
             await RequestUserInfo();
-            if (leigodCoreModel.IsNotPaused)
+        }
+
+        if (leigodCoreModel.IsNotPaused)
+        {
+            var matched = await leigodCoreModel.FindGameProcess();
+
+            // 服务端主动下发检测结果给客户端（无回执，允许数据丢弃）
+            await ipcServer.PushFindGameProcessAsync(matched);
+
+            if (string.IsNullOrEmpty(matched) && leigodCoreModel.MachedGameProcessTime != default)
             {
-                var matched = await leigodCoreModel.FindGameProcess();
-                if (string.IsNullOrEmpty(matched) && leigodCoreModel.MachedGameProcessTime != default)
+                var loopTime = ConfigFile.GetValue<float>("looptime");
+                if (loopTime < 1) loopTime = 1;
+                if (DateTimeOffset.Now - leigodCoreModel.MachedGameProcessTime > TimeSpan.FromSeconds(loopTime))
                 {
-                    var loopTime = ConfigFile.GetValue<float>("looptime");
-                    if (loopTime < 1) loopTime = 1;
-                    if (DateTimeOffset.Now - leigodCoreModel.MachedGameProcessTime > TimeSpan.FromSeconds(loopTime))
-                    {
-                        await SendPauseState();
-                    }
+                    await SendPauseState();
+                    await RequestUserInfo();
                 }
             }
         }

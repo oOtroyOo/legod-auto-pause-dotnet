@@ -10,6 +10,15 @@ public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<Se
     private readonly CancellationTokenSource _cts = new();
     private Task? _listenTask;
 
+    // 当前正在服务的客户端连接；服务端主动下发时使用它。
+    private volatile NamedPipeServerStream? _currentPipe;
+
+    // 串行化所有对管道的写（响应 + 主动下发），避免并发写导致帧交错。
+    private readonly SemaphoreSlim _writeGate = new(1, 1);
+
+    // 上一次下发的游戏进程结果，用于去重（未变化不重复下发）。
+    private string? _lastPushedGameMsg;
+
     public void Start()
     {
         logger.LogInformation("IPC pipe server starting on {PipeName}", IpcPipeNames.CommandPipe);
@@ -57,6 +66,7 @@ public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<Se
 
     private async Task HandleClientAsync(NamedPipeServerStream pipe, CancellationToken token)
     {
+        _currentPipe = pipe;
         try
         {
             // 保持连接：一条连接循环处理多条指令，直到客户端断开或服务停止，
@@ -85,11 +95,26 @@ public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<Se
                 logger.LogInformation("IPC command received: {Command}", command.Command);
 
                 var result = await DispatchAsync(command).ConfigureAwait(false);
-                await protobufMsgEncoder.Encode(pipe, result, token).ConfigureAwait(false);
+
+                // 响应与主动下发共用写锁，避免两处并发写导致帧交错
+                await _writeGate.WaitAsync(token).ConfigureAwait(false);
+                try
+                {
+                    await protobufMsgEncoder.Encode(pipe, result, token).ConfigureAwait(false);
+                }
+                finally
+                {
+                    _writeGate.Release();
+                }
             }
         }
         finally
         {
+            if (ReferenceEquals(_currentPipe, pipe))
+            {
+                _currentPipe = null;
+            }
+
             pipe.Dispose();
             logger.LogDebug("IPC client disconnected");
         }
@@ -205,5 +230,47 @@ public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<Se
         }
 
         return (0, null, Encoding.UTF8.GetBytes(gameMsg));
+    }
+
+    /// <summary>
+    /// 主动向已连接的客户端下发游戏进程检测结果（服务端发起，不要求回执）。
+    /// 结果未变化时不重复下发；失败仅记日志，允许数据丢弃。
+    /// </summary>
+    public async Task PushFindGameProcessAsync(string? gameMsg)
+    {
+        if (string.Equals(gameMsg, _lastPushedGameMsg, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var pipe = _currentPipe;
+        if (pipe is null || !pipe.IsConnected)
+        {
+            // 无客户端连接：更新去重基准即可，本次数据丢弃
+            _lastPushedGameMsg = gameMsg;
+            return;
+        }
+
+        var envelope = new IpcEnvelope
+        {
+            Command = ServiceCommand.FindGameProcess,
+            Code = 0,
+            Payload = string.IsNullOrEmpty(gameMsg) ? null : Encoding.UTF8.GetBytes(gameMsg),
+        };
+
+        await _writeGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            await protobufMsgEncoder.Encode(pipe, envelope, CancellationToken.None).ConfigureAwait(false);
+            _lastPushedGameMsg = gameMsg;
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(e, "下发游戏进程结果失败（允许丢弃）");
+        }
+        finally
+        {
+            _writeGate.Release();
+        }
     }
 }

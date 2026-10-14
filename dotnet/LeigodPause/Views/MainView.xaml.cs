@@ -72,7 +72,6 @@ public partial class MainView
     }
 
     DateTimeOffset lastInfoTime;
-    DateTimeOffset lastFindTime;
 
     private async Task UpdateTimer()
     {
@@ -122,27 +121,10 @@ public partial class MainView
             }
         }
 
-        if (_ipcClient.IsConnected)
-        {
-            // 节流：避免每 100ms 都打一次进程扫描 IPC，每 5s 才查一次。
-            var now = DateTimeOffset.Now;
-            if (now - lastFindTime > TimeSpan.FromSeconds(5))
-            {
-                lastFindTime = now;
-                var respose = await _ipcClient.SendAsync(new IpcEnvelope() { Command = ServiceCommand.FindGameProcess }, this._pollCts?.Token ?? CancellationToken.None);
-
-                if (respose != null)
-                {
-                    logger.LogInformation("RefreshUserInfo response: {0}", respose);
-
-                    if (respose.Code == 0 && respose.Payload is { Length: > 0 })
-                    {
-                        LeigodCoreModel.MatchedGameProcess = Encoding.UTF8.GetString(respose.Payload);
-                    }
-                }
-            }
-        }
-        else
+        // FindGameProcess 不再由客户端发起：改由服务端主动下发，
+        // 客户端接收泵收到后更新 LeigodCoreModel.MatchedGameProcess（无回执）。
+        // 仅当服务未连接时回退为本地扫描，保证没装服务也能显示。
+        if (!_ipcClient.IsConnected)
         {
             await LeigodCoreModel.FindGameProcess().ConfigureAwait(false);
         }
