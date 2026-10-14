@@ -1,8 +1,4 @@
-﻿using System;
-using System.Net.Http;
-using Microsoft.Extensions.DependencyInjection;
-
-namespace LeigodPause.Service.Api;
+﻿namespace LeigodPause.Service.Api;
 
 /// <summary>
 /// HttpClient 扩展：封装雷神(leigod)接口所需的默认请求头与注册方式。

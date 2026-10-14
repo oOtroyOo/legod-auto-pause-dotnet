@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Globalization;
-using System.Runtime.InteropServices;
 
 namespace LeigodPause;
 

@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace LeigodPause.Service.Proto;
+﻿namespace LeigodPause.Service.Proto;
 
 using IniParser;
 using IniParser.Model;

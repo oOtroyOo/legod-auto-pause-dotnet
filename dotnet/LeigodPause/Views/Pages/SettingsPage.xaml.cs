@@ -1,11 +1,3 @@
-// This Source Code Form is subject to the terms of the MIT License.
-// If a copy of the MIT was not distributed with this file, You can obtain one at https://opensource.org/licenses/MIT.
-// Copyright (C) Leszek Pomianowski and WPF UI Contributors.
-// All Rights Reserved.
-
-using LeigodPause.Utilities;
-using Wpf.Ui.Appearance;
-
 namespace LeigodPause.Views.Pages;
 
 /// <summary>
@@ -19,7 +11,7 @@ public partial class SettingsPage
 
         AppVersionTextBlock.Text = $"WPF UI - Simple Demo - {GetAssemblyVersion()}";
 
-        if (Wpf.Ui.Appearance.ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark)
+        if (ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark)
         {
             DarkThemeRadioButton.IsChecked = true;
         }
@@ -33,12 +25,12 @@ public partial class SettingsPage
 
     private void OnLightThemeRadioButtonChecked(object sender, RoutedEventArgs e)
     {
-        Wpf.Ui.Appearance.ApplicationThemeManager.Apply(ApplicationTheme.Light);
+        ApplicationThemeManager.Apply(ApplicationTheme.Light);
     }
 
     private void OnDarkThemeRadioButtonChecked(object sender, RoutedEventArgs e)
     {
-        Wpf.Ui.Appearance.ApplicationThemeManager.Apply(ApplicationTheme.Dark);
+        ApplicationThemeManager.Apply(ApplicationTheme.Dark);
     }
 
     private string GetAssemblyVersion()

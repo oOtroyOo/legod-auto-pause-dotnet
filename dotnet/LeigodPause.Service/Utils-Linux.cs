@@ -1,8 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Text;
-
-namespace LeigodPause.Service;
+﻿namespace LeigodPause.Service;
 
 public partial class Utils
 {

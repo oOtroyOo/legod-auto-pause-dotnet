@@ -1,32 +1,6 @@
-﻿// This Source Code Form is subject to the terms of the MIT License.
-// If a copy of the MIT was not distributed with this file, You can obtain one at https://opensource.org/licenses/MIT.
-// Copyright (C) Leszek Pomianowski and WPF UI Contributors.
-// All Rights Reserved.
-
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using System.Threading.Tasks;
-using System.Windows.Controls;
+﻿using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using LeigodPause.Ipc;
-using LeigodPause.Models;
-using LeigodPause.Service;
-using LeigodPause.Service.Api;
-using LeigodPause.Service.Ipc;
-using LeigodPause.Service.Models;
-using LeigodPause.Service.Proto;
-using LeigodPause.Utilities;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Web.WebView2.Core;
-using Timer = System.Timers.Timer;
 
 namespace LeigodPause.Views.Pages;
 
@@ -35,7 +9,7 @@ namespace LeigodPause.Views.Pages;
 /// </summary>
 public partial class DashboardPage : INotifyPropertyChanged
 {
-    public string InstallButtonText => LeigodPause.Service.Utils.IsInstalled() ? "卸载服务" : "安装服务";
+    public string InstallButtonText => Utils.IsInstalled() ? "卸载服务" : "安装服务";
     private bool _isRunning = false;
     public string IsRunningText => IsRunning ? "运行中" : "未运行";
     public bool IsRunning => _isRunning;
@@ -66,7 +40,7 @@ public partial class DashboardPage : INotifyPropertyChanged
         // 就近遮蔽全局/主窗口的主题画刷，导致设置页切换主题时本页文字颜色不更新。
         // 文字颜色由 Page 上的 {DynamicResource TextFillColorPrimaryBrush} 提供，随主题动态刷新。
 
-        var currentApp = (App)App.CurrentApp;
+        var currentApp = App.CurrentApp;
         var appMainWindow = currentApp.MainWindow;
         appMainWindow.Closing += AppMainWindowOnClosing;
     }
@@ -74,7 +48,7 @@ public partial class DashboardPage : INotifyPropertyChanged
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         var timer = new Timer(1000);
-        timer.Elapsed += (s, e) => { this.Dispatcher.Invoke(UpdateTimer); };
+        timer.Elapsed += (s, e) => { Dispatcher.Invoke(UpdateTimer); };
         timer.Start();
         _ = UpdateTimer();
     }
@@ -95,7 +69,7 @@ public partial class DashboardPage : INotifyPropertyChanged
     private void OnBaseButtonClick(object sender, RoutedEventArgs e)
     {
         CounterTextBlock.SetCurrentValue(
-            System.Windows.Controls.TextBlock.TextProperty,
+            TextBlock.TextProperty,
             (++_counter).ToString()
         );
     }
@@ -321,10 +295,10 @@ public partial class DashboardPage : INotifyPropertyChanged
             var token = (await WebView.ExecuteScriptAsync("JSON.parse(localStorage.getItem('account_token')).account_token"))?.Trim('"');
             if (!string.IsNullOrEmpty(token) && token != "null")
             {
-                await this.Dispatcher.InvokeAsync(async () =>
+                await Dispatcher.InvokeAsync(async () =>
                 {
                     LeigodCoreModel.Token = token;
-                    var messageBox = new Wpf.Ui.Controls.MessageBox
+                    var messageBox = new MessageBox
                     {
                         Content = token,
                         CloseButtonText = "复制",
@@ -340,10 +314,10 @@ public partial class DashboardPage : INotifyPropertyChanged
             }
             else
             {
-                await this.Dispatcher.InvokeAsync(async () =>
+                await Dispatcher.InvokeAsync(async () =>
                 {
                     LeigodCoreModel.Token = string.Empty;
-                    var messageBox = new Wpf.Ui.Controls.MessageBox
+                    var messageBox = new MessageBox
                     {
                         Content = "没有找到Token",
                         CloseButtonText = "关闭"
@@ -368,7 +342,7 @@ public partial class DashboardPage : INotifyPropertyChanged
         _ = LeigodCoreModel.SendPauseState((i, s) =>
         {
             LeigodCoreModel.Token = null;
-            var messageBox = new Wpf.Ui.Controls.MessageBox
+            var messageBox = new MessageBox
             {
                 Content = i + "\n" + s,
                 Title = "暂停调用失败",

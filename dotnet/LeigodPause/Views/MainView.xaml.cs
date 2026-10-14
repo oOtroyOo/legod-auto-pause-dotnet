@@ -1,21 +1,3 @@
-// This Source Code Form is subject to the terms of the MIT License.
-// If a copy of the MIT was not distributed with this file, You can obtain one at https://opensource.org/licenses/MIT.
-// Copyright (C) Leszek Pomianowski and WPF UI Contributors.
-// All Rights Reserved.
-
-using System.ComponentModel;
-using System.Text.Json.Nodes;
-using System.Timers;
-using System.Threading.Tasks;
-using LeigodPause.Ipc;
-using LeigodPause.Service.Ipc;
-using LeigodPause.Service.Models;
-using LeigodPause.Service.Proto;
-using LeigodPause.Utilities;
-using LeigodPause.Views.Pages;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-
 namespace LeigodPause.Views;
 
 public partial class MainView
@@ -49,8 +31,8 @@ public partial class MainView
 
     private void MainView_OnLoaded(object sender, RoutedEventArgs e)
     {
-        var timer = new System.Timers.Timer(100);
-        timer.Elapsed += (s, e) => { this.Dispatcher.Invoke(UpdateTimer); };
+        var timer = new Timer(100);
+        timer.Elapsed += (s, e) => { Dispatcher.Invoke(UpdateTimer); };
         timer.Start();
     }
 
@@ -94,7 +76,7 @@ public partial class MainView
                 else
                 {
                     LeigodCoreModel.Token = null;
-                    var messageBox = new Wpf.Ui.Controls.MessageBox
+                    var messageBox = new MessageBox
                     {
                         Content = respose.Code + "\n" + respose.Msg,
                         Title = "用户登录失效",

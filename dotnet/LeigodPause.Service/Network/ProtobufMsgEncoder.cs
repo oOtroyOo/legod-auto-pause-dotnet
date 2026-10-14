@@ -1,12 +1,3 @@
-using System.Buffers;
-using System.IO.Pipelines;
-using System.IO.Pipes;
-using System.Net;
-using LeigodPause.Service.Ipc;
-
-#if True
-
-
 namespace LeigodPause.Service.Network;
 
 public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
@@ -77,5 +68,3 @@ public class ProtobufMsgEncoder(ILogger<ProtobufMsgEncoder>? logger)
         }
     }
 }
-
-#endif

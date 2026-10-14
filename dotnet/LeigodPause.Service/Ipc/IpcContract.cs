@@ -1,8 +1,3 @@
-using System.IO;
-using System.IO.Pipes;
-using System.Text;
-using System.Text.Json;
-
 namespace LeigodPause.Service.Ipc;
 
 public static class IpcPipeNames

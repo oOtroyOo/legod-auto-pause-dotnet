@@ -1,9 +1,3 @@
-using System.Timers;
-using LeigodPause.Service.Ipc;
-using LeigodPause.Service.Models;
-using LeigodPause.Service.Network;
-using LeigodPause.Service.Proto;
-
 namespace LeigodPause.Service;
 
 public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCoreModel leigodCoreModel) : BackgroundService

@@ -1,14 +1,33 @@
-// This Source Code Form is subject to the terms of the MIT License.
-// If a copy of the MIT was not distributed with this file, You can obtain one at https://opensource.org/licenses/MIT.
-// Copyright (C) Leszek Pomianowski and WPF UI Contributors.
-// All Rights Reserved.
-
 global using System;
+global using System.Collections.Generic;
 global using System.Collections.ObjectModel;
+global using System.ComponentModel;
+global using System.Diagnostics;
+global using System.Globalization;
+global using System.IO;
+global using System.Linq;
+global using System.Runtime.InteropServices;
+global using System.Text;
+global using System.Text.Json.Nodes;
 global using System.Threading;
+global using System.Threading.Tasks;
 global using System.Windows;
+global using System.Windows.Controls;
+global using System.Windows.Data;
 global using System.Windows.Media;
 global using Wpf.Ui;
-global using System.Globalization;
-global using System.Text;
+global using Wpf.Ui.Appearance;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Logging;
+global using Microsoft.Win32;
+global using LeigodPause.Ipc;
+global using LeigodPause.Service;
+global using LeigodPause.Service.Api;
+global using LeigodPause.Service.Ipc;
+global using LeigodPause.Service.Models;
+global using LeigodPause.Service.Network;
+global using LeigodPause.Service.Proto;
+global using LeigodPause.Utilities;
+global using LeigodPause.Views.Pages;
+global using Timer = System.Timers.Timer;
 global using MessageBox = Wpf.Ui.Controls.MessageBox;

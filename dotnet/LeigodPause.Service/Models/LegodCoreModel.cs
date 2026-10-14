@@ -1,15 +1,4 @@
-﻿using System.Net.Http;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using System.Threading;
-using System.Timers;
-using CommunityToolkit.Mvvm.ComponentModel;
-using LeigodPause.Service.Api;
-using LeigodPause.Service.Proto;
-using Timer = System.Timers.Timer;
-
-namespace LeigodPause.Service.Models;
+﻿namespace LeigodPause.Service.Models;
 
 public partial class LeigodCoreModel : ObservableObject
 {

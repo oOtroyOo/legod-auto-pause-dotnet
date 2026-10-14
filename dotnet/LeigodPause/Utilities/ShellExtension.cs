@@ -1,17 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Windows;
-using System.Xml.Linq;
-using System.Xml.XPath;
-using Microsoft.Win32;
+﻿using System.Drawing;
 
 namespace LeigodPause;
 public class ShellExtension

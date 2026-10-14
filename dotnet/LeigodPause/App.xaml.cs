@@ -1,29 +1,8 @@
-﻿// This Source Code Form is subject to the terms of the MIT License.
-// If a copy of the MIT was not distributed with this file, You can obtain one at https://opensource.org/licenses/MIT.
-// Copyright (C) Leszek Pomianowski and WPF UI Contributors.
-// All Rights Reserved.
-
-using System.IO;
-using System.Net.Http;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using System.Windows.Interop;
+﻿using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using LeigodPause.Ipc;
-using LeigodPause.Models;
-using LeigodPause.Service;
-using LeigodPause.Service.Api;
-using LeigodPause.Service.Ipc;
-using LeigodPause.Service.Models;
-using LeigodPause.Service.Network;
-using LeigodPause.Service.Proto;
 using LeigodPause.Views;
-using LeigodPause.Views.Pages;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Wpf.Ui.Appearance;
 
 namespace LeigodPause;
 
@@ -70,8 +49,8 @@ public partial class App
         AttachConsole(-1);
 
         // 跟随 Windows 系统主题（深色/浅色）启动，之后仍可用设置页手动切换
-        SystemTheme systemTheme = Wpf.Ui.Appearance.ApplicationThemeManager.GetSystemTheme();
-        Wpf.Ui.Appearance.ApplicationThemeManager.Apply(systemTheme == SystemTheme.Dark ? ApplicationTheme.Dark : ApplicationTheme.Light);
+        SystemTheme systemTheme = ApplicationThemeManager.GetSystemTheme();
+        ApplicationThemeManager.Apply(systemTheme == SystemTheme.Dark ? ApplicationTheme.Dark : ApplicationTheme.Light);
         // Wpf.Ui.Appearance.ApplicationThemeManager.Apply(GetWindowsTheme());
 
         var ipcClient = Host.Services.GetRequiredService<ServiceIpcClient>();
@@ -83,21 +62,21 @@ public partial class App
     /// <summary>
     /// 读取 Windows “应用”模式主题：AppsUseLightTheme 为 0 表示深色，1 表示浅色。
     /// </summary>
-    private static Wpf.Ui.Appearance.ApplicationTheme GetWindowsTheme()
+    private static ApplicationTheme GetWindowsTheme()
     {
         try
         {
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+            using var key = Registry.CurrentUser.OpenSubKey(
                 @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
             // AppsUseLightTheme: 0 = 深色, 1 = 浅色
             var value = key?.GetValue("AppsUseLightTheme");
             return value is 0
-                ? Wpf.Ui.Appearance.ApplicationTheme.Dark
-                : Wpf.Ui.Appearance.ApplicationTheme.Light;
+                ? ApplicationTheme.Dark
+                : ApplicationTheme.Light;
         }
         catch
         {
-            return Wpf.Ui.Appearance.ApplicationTheme.Light;
+            return ApplicationTheme.Light;
         }
     }
 
@@ -126,10 +105,10 @@ public partial class App
 
     public Lazy<ImageSource> CurrentExeIcon { get; } = new Lazy<ImageSource>(() =>
     {
-        var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+        var exePath = Process.GetCurrentProcess().MainModule.FileName;
         using (var icon = System.Drawing.Icon.ExtractAssociatedIcon(exePath))
         {
-            var source = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(
+            var source = Imaging.CreateBitmapSourceFromHIcon(
                 icon.Handle,
                 Int32Rect.Empty,
                 BitmapSizeOptions.FromEmptyOptions());
