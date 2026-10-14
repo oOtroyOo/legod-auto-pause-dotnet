@@ -1,6 +1,6 @@
 ﻿namespace LeigodPause.Service.Models;
 
-public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogger<LeigodCoreModel> logger) : ObservableObject
+public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogger<LeigodCoreModel> logger, ConfigFile configFile) : ObservableObject
 {
     // 在构造时（于 UI 线程解析服务）捕获同步上下文；
     // Windows 服务中为 null，此时直接赋值即可（无 UI 需更新）。
@@ -15,7 +15,7 @@ public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogg
     // 保护跨线程读写的状态字段（Service 端 Worker 线程 vs IPC 线程）。
     private readonly object _stateLock = new();
 
-    [ObservableProperty] private string? _token = ConfigFile.GetValue<string>("account_token");
+    [ObservableProperty] private string? _token = configFile.GetValue<string>("account_token");
     [ObservableProperty] private string? _userName;
     [ObservableProperty] private string? _pauseStatus;
     [ObservableProperty] private string? _matchedGameProcess;
@@ -40,7 +40,7 @@ public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogg
 
     partial void OnTokenChanged(string? oldValue, string? newValue)
     {
-        ConfigFile.SetValue("account_token", newValue);
+        configFile.SetValue("account_token", newValue);
         if (string.IsNullOrEmpty(newValue))
         {
             ApplyFields(null);
@@ -57,7 +57,7 @@ public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogg
 
         try
         {
-            var token = ConfigFile.GetValue<string>("account_token");
+            var token = configFile.GetValue<string>("account_token");
             if (token is { Length: > 0 })
             {
                 var httpClient = httpClientFactory.CreateClient(HttpClientExtensions.LeigodClientName);
@@ -136,7 +136,7 @@ public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogg
 
         try
         {
-            var token = ConfigFile.GetValue<string>("account_token");
+            var token = configFile.GetValue<string>("account_token");
             if (token is { Length: > 0 })
             {
                 var httpClient = httpClientFactory.CreateClient(HttpClientExtensions.LeigodClientName);
@@ -181,7 +181,7 @@ public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogg
 
         try
         {
-            string[] games = ConfigFile.GetValue<string>("games")?.Split(',') ?? Array.Empty<string>();
+            string[] games = configFile.GetValue<string>("games")?.Split(',') ?? Array.Empty<string>();
             foreach (var gameName in games)
             {
                 var name = gameName.Trim();

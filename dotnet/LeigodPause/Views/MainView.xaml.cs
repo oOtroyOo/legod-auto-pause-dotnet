@@ -11,6 +11,7 @@ public partial class MainView
     public LeigodCoreModel LeigodCoreModel { get; } = App.Host.Services.GetRequiredService<LeigodCoreModel>();
     private ILogger<MainView> logger = App.Host.Services.GetRequiredService<ILogger<MainView>>();
     private ServiceIpcClient _ipcClient = App.Host.Services.GetRequiredService<ServiceIpcClient>();
+    private ConfigFile configFile = App.Host.Services.GetRequiredService<ConfigFile>(); 
     private CancellationTokenSource? _pollCts;
 
     public MainView()
@@ -20,7 +21,7 @@ public partial class MainView
         Loaded += (_, _) => RootNavigation.Navigate(typeof(DashboardPage));
 
         UiApplication.Current.MainWindow = this;
-        logger.LogInformation("games: {games}", ConfigFile.GetValue<string>("games"));
+        logger.LogInformation("games: {games}", configFile.GetValue<string>("games"));
         this.ApplyTheme();
     }
 

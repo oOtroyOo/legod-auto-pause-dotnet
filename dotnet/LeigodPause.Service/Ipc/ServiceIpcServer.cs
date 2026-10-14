@@ -5,7 +5,7 @@ using System.Security.Principal;
 
 namespace LeigodPause.Service.Ipc;
 
-public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<ServiceIpcServer> logger, ProtobufMsgEncoder protobufMsgEncoder)
+public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<ServiceIpcServer> logger, ProtobufMsgEncoder protobufMsgEncoder, ConfigFile configFile)
 {
     private readonly CancellationTokenSource _cts = new();
     private Task? _listenTask;
@@ -146,7 +146,7 @@ public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<Se
 
     private async Task<(int Code, string? Msg, byte[]? Data)> DoReloadConfig()
     {
-        ConfigFile.Reload();
+        configFile.Reload();
         return (0, null, null);
     }
 

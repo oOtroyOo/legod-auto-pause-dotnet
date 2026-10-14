@@ -6,25 +6,26 @@ using System;
 using System.Globalization;
 using System.IO;
 
-public class ConfigFile
+public class ConfigFile(ILogger<ConfigFile> logger)
 {
     const string FileName = "config.ini";
-    static string Section => Path.GetFileNameWithoutExtension(FileName);
-    private static string FilePath => Path.Combine(Environment.CurrentDirectory, FileName); //Path.Combine(AppContext.BaseDirectory, FileName);
+    string Section => Path.GetFileNameWithoutExtension(FileName);
+    private string FilePath => Path.Combine(AppContext.BaseDirectory, FileName);
 
-    private static readonly FileIniDataParser _parser = new FileIniDataParser();
-    private static IniData _data = Load();
-    public static event Action? OnSave;
+    private readonly FileIniDataParser _parser = new FileIniDataParser();
+    private IniData? _data;
+    public event Action? OnSave;
 
-    private static DateTime _lastModifyDate = default;
+    private DateTime _lastModifyDate = default;
 
     // 保护 _data 的并发读写（Worker / IPC / UI 多线程）。
-    private static readonly object _dataLock = new();
+    private readonly object _dataLock = new();
 
-    private static IniData Load()
+    private IniData Load()
     {
         _parser.Parser.Configuration.CommentString = "#";
         var fileInfo = new FileInfo(FilePath);
+        logger.Log(LogLevel.Information, "Config file path: {FilePath} Exsist{fileInfo.Exists}", FilePath, fileInfo.Exists);
         if (fileInfo.Exists)
         {
             _lastModifyDate = fileInfo.LastWriteTime;
@@ -34,25 +35,32 @@ public class ConfigFile
         return new IniData();
     }
 
-    private static void EnsureSection()
+    private void EnsureSection()
     {
         lock (_dataLock)
         {
-            if (!_data.Sections.ContainsSection(Section))
-                _data.Sections.AddSection(Section);
-        }
-    }
+            _data ??= Load();
+            var fileInfo = new FileInfo(FilePath);
 
-    public static T? GetValue<T>(string key)
-    {
-        var fileInfo = new FileInfo(FilePath);
-        lock (_dataLock)
-        {
             // 先取最新修改时间，判断是否需要热重载（Reload 同样走 _dataLock，可重入）
             if (fileInfo.Exists && fileInfo.LastWriteTime > _lastModifyDate)
             {
                 Reload();
             }
+
+
+            if (!_data.Sections.ContainsSection(Section))
+                _data.Sections.AddSection(Section);
+        }
+    }
+
+    public T? GetValue<T>(string key)
+    {
+        lock (_dataLock)
+        {
+            EnsureSection();
+
+            if (_data == null) return default;
 
             var section = _data.Sections[Section];
             var raw = section?[key];
@@ -73,9 +81,10 @@ public class ConfigFile
         }
     }
 
-    public static void SetValue<T>(string key, T value)
+    public void SetValue<T>(string key, T value)
     {
         EnsureSection();
+        if (_data == null) return;
         lock (_dataLock)
         {
             _data[Section][key] = value?.ToString();
@@ -87,7 +96,7 @@ public class ConfigFile
         OnSave?.Invoke();
     }
 
-    public static void Reload()
+    public void Reload()
     {
         lock (_dataLock)
         {

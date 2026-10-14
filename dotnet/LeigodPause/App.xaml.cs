@@ -53,6 +53,7 @@ public partial class App
                 })
                 .AddLeigodHttpClient()
                 .AddSingleton<MainView>()
+                .AddSingleton<ConfigFile>()
                 .AddSingleton<LeigodCoreModel>()
                 .AddSingleton<ServiceIpcClient>()
                 .AddSingleton<ProtobufMsgEncoder>()
@@ -78,7 +79,8 @@ public partial class App
             var ipcClient = Host.Services.GetRequiredService<ServiceIpcClient>();
             Task.Run(ipcClient.Connect);
 
-            ConfigFile.OnSave += () => { _ = ipcClient.SendAsync(new IpcEnvelope() { Command = ServiceCommand.ReloadConfig }); };
+            var  configFile = Host.Services.GetRequiredService<ConfigFile>();
+            configFile.OnSave += () => { _ = ipcClient.SendAsync(new IpcEnvelope() { Command = ServiceCommand.ReloadConfig }); };
         }
         catch (Exception ex)
         {

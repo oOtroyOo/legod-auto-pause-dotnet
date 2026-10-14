@@ -2,7 +2,7 @@ using Microsoft.Win32;
 
 namespace LeigodPause.Service;
 
-public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCoreModel leigodCoreModel) : BackgroundService
+public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCoreModel leigodCoreModel, ConfigFile configFile) : BackgroundService
 {
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
@@ -30,7 +30,7 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("ExecuteAsync");
-        logger.LogInformation("games: {games}", ConfigFile.GetValue<string>("games"));
+        logger.LogInformation("games: {games}", configFile.GetValue<string>("games"));
         ipcServer.Start();
         SystemEvents.SessionEnding += OnSessionEnding;
         try
@@ -64,7 +64,7 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
                 logger.LogError(e, "Worker error");
             }
 
-            float updateTime = ConfigFile.GetValue<float>("update");
+            float updateTime = configFile.GetValue<float>("update");
             if (updateTime < 1) updateTime = 1;
 
             await Task.Delay((int)(updateTime * 1000), stoppingToken);
@@ -132,7 +132,7 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
 
             if (string.IsNullOrEmpty(matched) && leigodCoreModel.MachedGameProcessTime != default)
             {
-                var loopTime = ConfigFile.GetValue<float>("looptime");
+                var loopTime = configFile.GetValue<float>("looptime");
                 if (loopTime < 1) loopTime = 1;
                 if (DateTimeOffset.Now - leigodCoreModel.MachedGameProcessTime > TimeSpan.FromSeconds(loopTime))
                 {
@@ -145,7 +145,7 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
 
     private async Task RequestUserInfo()
     {
-        var token = ConfigFile.GetValue<string>("account_token");
+        var token = configFile.GetValue<string>("account_token");
         if (token is { Length: > 0 })
         {
             await leigodCoreModel.RequestUserInfo((c, m) =>
@@ -160,7 +160,7 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
     private async Task SendPauseState()
     {
         logger.LogInformation("SendPauseState");
-        var token = ConfigFile.GetValue<string>("account_token");
+        var token = configFile.GetValue<string>("account_token");
         if (token is { Length: > 0 })
         {
             await leigodCoreModel.SendPauseState((c, m) =>

@@ -41,17 +41,17 @@ public class Program
             .AddLogging(loggingBuilder =>
             {
                 loggingBuilder.AddConsole();
-#if DEBUG
+
                 loggingBuilder.AddProvider(new FileLoggerProvider());
-#endif
+
             })
             .AddLeigodHttpClient()
             .AddSingleton<LeigodCoreModel>()
             .AddSingleton<ServiceIpcServer>()
             .AddSingleton<ProtobufMsgEncoder>()
+            .AddSingleton<ConfigFile>()
             .AddHostedService<Worker>();
 
-        File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "log/IsWindowsService.txt"), WindowsServiceHelpers.IsWindowsService().ToString());
         if (WindowsServiceHelpers.IsWindowsService())
         {
             builder.Services
