@@ -28,7 +28,9 @@ public partial class App
     public static App CurrentApp => (App)Current;
 
     // 单例相关：命名 Mutex 阻止重复启动，命名管道用于让已有实例把窗口前置。
-    private const string SingleInstanceMutexName = @"Global\LeigodPause_SingleInstance_9F2A4C7E-1B3D-4E5A-8C6B-2D4F1A0E9B3C";
+    // 单例互斥锁使用会话局部命名空间（Local\）。Global\ 需要 SeCreateGlobalPrivilege 特权，
+    // 普通用户会话下的桌面程序没有该权限，创建会抛 UnauthorizedAccessException 导致起不来。
+    private const string SingleInstanceMutexName = @"Local\LeigodPause_SingleInstance_9F2A4C7E-1B3D-4E5A-8C6B-2D4F1A0E9B3C";
     private const string SingleInstancePipeName = @"LeigodPause_SingleInstance_Pipe";
     private static Mutex? _singleInstanceMutex;
     private static Thread? _singleInstancePipeThread;

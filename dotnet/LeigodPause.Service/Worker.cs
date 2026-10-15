@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using System.Runtime.InteropServices;
 
 namespace LeigodPause.Service;
 
@@ -204,11 +205,226 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
             if (Process.GetProcessesByName(appName).Length > 0) return;
 
             var appPath = Path.Combine(AppContext.BaseDirectory, appName);
-            Process.Start(appPath);
+
+            // Windows 服务运行在 Session 0，直接 Process.Start 会把 GUI 启动在无交互桌面的
+            // Session 0，用户看不到窗口。需拿到活动用户会话令牌，在用户桌面(winsta0\default)启动。
+            if (!TryLaunchInUserSession(appPath))
+            {
+                // 兜底：当前进程本身就在用户会话（如调试时以当前用户运行）时仍可正常显示
+                Process.Start(new ProcessStartInfo(appPath) { UseShellExecute = true });
+            }
         }
         catch (Exception e)
         {
             logger.LogError(e, "不能启动主应用 {appName}", appName);
+        }
+    }
+
+    /// <summary>
+    /// 在活动用户会话（winsta0\default 桌面）启动目标程序，使 GUI 对用户可见。
+    /// 失败返回 false（无活动会话 / 令牌获取失败），交由调用方兜底。
+    /// </summary>
+    private static bool TryLaunchInUserSession(string appPath)
+    {
+        IntPtr sessionInfo = IntPtr.Zero;
+        IntPtr userToken = IntPtr.Zero;
+        IntPtr primaryToken = IntPtr.Zero;
+        try
+        {
+            if (!NativeMethods.WTSEnumerateSessions(IntPtr.Zero, 0, 1, out sessionInfo, out int count))
+            {
+                return false;
+            }
+
+            int sessionSize = Marshal.SizeOf<NativeMethods.WTS_SESSION_INFO>();
+            IntPtr offset = sessionInfo;
+            uint? activeSessionId = null;
+            for (int i = 0; i < count; i++)
+            {
+                var info = Marshal.PtrToStructure<NativeMethods.WTS_SESSION_INFO>(offset);
+                if (info.State == NativeMethods.WTS_CONNECTSTATE_CLASS.Active)
+                {
+                    activeSessionId = (uint)info.SessionID;
+                    break;
+                }
+
+                offset = IntPtr.Add(offset, sessionSize);
+            }
+
+            if (activeSessionId == null)
+            {
+                return false;
+            }
+
+            if (!NativeMethods.WTSQueryUserToken(activeSessionId.Value, out userToken))
+            {
+                return false;
+            }
+
+            const uint tokenPrivs = NativeMethods.TOKEN_QUERY
+                | NativeMethods.TOKEN_DUPLICATE
+                | NativeMethods.TOKEN_ASSIGN_PRIMARY
+                | NativeMethods.TOKEN_ADJUST_DEFAULT
+                | NativeMethods.TOKEN_ADJUST_SESSIONID;
+
+            if (!NativeMethods.DuplicateTokenEx(
+                    userToken, tokenPrivs, IntPtr.Zero,
+                    NativeMethods.SECURITY_IMPLEMENTATION.SecurityImpersonation,
+                    NativeMethods.TOKEN_TYPE.TokenPrimary, out primaryToken))
+            {
+                return false;
+            }
+
+            var si = new NativeMethods.STARTUPINFO
+            {
+                cb = Marshal.SizeOf<NativeMethods.STARTUPINFO>(),
+                lpDesktop = @"winsta0\default",
+            };
+
+            if (NativeMethods.CreateProcessAsUser(
+                    primaryToken, appPath, null,
+                    IntPtr.Zero, IntPtr.Zero, false,
+                    NativeMethods.NORMAL_PRIORITY_CLASS, IntPtr.Zero,
+                    Path.GetDirectoryName(appPath), ref si, out _))
+            {
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+        finally
+        {
+            if (sessionInfo != IntPtr.Zero)
+            {
+                NativeMethods.WTSFreeMemory(sessionInfo);
+            }
+
+            if (userToken != IntPtr.Zero)
+            {
+                NativeMethods.CloseHandle(userToken);
+            }
+
+            if (primaryToken != IntPtr.Zero)
+            {
+                NativeMethods.CloseHandle(primaryToken);
+            }
+        }
+    }
+
+    private static class NativeMethods
+    {
+        [DllImport("wtsapi32.dll", SetLastError = true)]
+        public static extern bool WTSQueryUserToken(uint sessionId, out IntPtr phToken);
+
+        [DllImport("wtsapi32.dll", SetLastError = true)]
+        public static extern bool WTSEnumerateSessions(IntPtr hServer, int reserved, int version, out IntPtr ppSessionInfo, out int pCount);
+
+        [DllImport("wtsapi32.dll", SetLastError = true)]
+        public static extern void WTSFreeMemory(IntPtr memory);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool CloseHandle(IntPtr hObject);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern bool CreateProcessAsUser(
+            IntPtr hToken,
+            string? lpApplicationName,
+            string? lpCommandLine,
+            IntPtr lpProcessAttributes,
+            IntPtr lpThreadAttributes,
+            bool bInheritHandles,
+            uint dwCreationFlags,
+            IntPtr lpEnvironment,
+            string? lpCurrentDirectory,
+            ref STARTUPINFO lpStartupInfo,
+            out PROCESS_INFORMATION lpProcessInformation);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern bool DuplicateTokenEx(
+            IntPtr hExistingToken,
+            uint dwDesiredAccess,
+            IntPtr lpTokenAttributes,
+            SECURITY_IMPLEMENTATION impersonationLevel,
+            TOKEN_TYPE tokenType,
+            out IntPtr phNewToken);
+
+        public const uint TOKEN_QUERY = 0x0008;
+        public const uint TOKEN_DUPLICATE = 0x0002;
+        public const uint TOKEN_ASSIGN_PRIMARY = 0x0001;
+        public const uint TOKEN_ADJUST_DEFAULT = 0x0080;
+        public const uint TOKEN_ADJUST_SESSIONID = 0x0100;
+        public const uint NORMAL_PRIORITY_CLASS = 0x0020;
+
+        public enum SECURITY_IMPLEMENTATION : int
+        {
+            SecurityAnonymous = 0,
+            SecurityIdentification = 1,
+            SecurityImpersonation = 2,
+            SecurityDelegation = 3,
+        }
+
+        public enum TOKEN_TYPE : int
+        {
+            TokenPrimary = 1,
+            TokenImpersonation = 2,
+        }
+
+        public enum WTS_CONNECTSTATE_CLASS
+        {
+            Active,
+            Connected,
+            ConnectQuery,
+            Shadow,
+            Disconnected,
+            Idle,
+            Listen,
+            Reset,
+            Down,
+            Init,
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public struct STARTUPINFO
+        {
+            public int cb;
+            public string? lpReserved;
+            public string? lpDesktop;
+            public string? lpTitle;
+            public int dwX;
+            public int dwY;
+            public int dwXSize;
+            public int dwYSize;
+            public int dwXCountChars;
+            public int dwYCountChars;
+            public int dwFillAttribute;
+            public int dwFlags;
+            public short wShowWindow;
+            public short cbReserved2;
+            public IntPtr lpReserved2;
+            public IntPtr hStdInput;
+            public IntPtr hStdOutput;
+            public IntPtr hStdError;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct PROCESS_INFORMATION
+        {
+            public IntPtr hProcess;
+            public IntPtr hThread;
+            public int dwProcessId;
+            public int dwThreadId;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WTS_SESSION_INFO
+        {
+            public int SessionID;
+            public IntPtr pWinStationName;
+            public WTS_CONNECTSTATE_CLASS State;
         }
     }
 }

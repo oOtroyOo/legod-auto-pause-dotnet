@@ -411,7 +411,6 @@ public partial class DashboardPage : INotifyPropertyChanged
     {
         _ = LeigodCoreModel.SendPauseState((i, s) =>
         {
-            LeigodCoreModel.Token = null;
             var messageBox = new MessageBox
             {
                 Content = i + "\n" + s,
