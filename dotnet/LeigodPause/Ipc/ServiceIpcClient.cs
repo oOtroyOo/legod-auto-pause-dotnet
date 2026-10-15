@@ -198,7 +198,8 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
                     {
                         Content = $"{envelope.Code}\n{envelope.Msg}",
                         Title = "用户登录失效",
-                        CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
+                        CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger,
+                        Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
                     };
                     messageBox.ShowDialogAsync().ContinueWith(t => { leigodCoreModel.Token = null; }, TaskContinuationOptions.OnlyOnRanToCompletion);
                 }, null);
@@ -226,7 +227,8 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
             return;
         }
 
-        if (envelope.Command == ServiceCommand.RefreshUserInfo)
+
+        if (envelope.Command == ServiceCommand.PauseState)
         {
             if (envelope.Code != 0)
             {
@@ -235,28 +237,12 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
                     var messageBox = new MessageBox
                     {
                         Content = $"{envelope.Code}\n{envelope.Msg}",
-                        Title = "用户登录失效",
+                        Title = "暂停调用失败",
+                        Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
                         CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
                     };
-                    messageBox.ShowDialogAsync().ContinueWith(t => { leigodCoreModel.Token = null; }, TaskContinuationOptions.OnlyOnRanToCompletion);
+                    messageBox.ShowDialogAsync();
                 }, null);
-            }
-
-            if (envelope.Command == ServiceCommand.PauseState)
-            {
-                if (envelope.Code != 0)
-                {
-                    _uiContext?.Post(_ =>
-                    {
-                        var messageBox = new MessageBox
-                        {
-                            Content = $"{envelope.Code}\n{envelope.Msg}",
-                            Title = "暂停调用失败",
-                            CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
-                        };
-                        messageBox.ShowDialogAsync();
-                    }, null);
-                }
             }
         }
     }

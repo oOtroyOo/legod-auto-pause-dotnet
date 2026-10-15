@@ -29,5 +29,4 @@ global using LeigodPause.Service.Network;
 global using LeigodPause.Service.Proto;
 global using LeigodPause.Utilities;
 global using LeigodPause.Views.Pages;
-global using Timer = System.Timers.Timer;
 global using MessageBox = Wpf.Ui.Controls.MessageBox;

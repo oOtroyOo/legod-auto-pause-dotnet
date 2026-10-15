@@ -4,7 +4,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using Microsoft.Web.WebView2.Core;
-using TextBlock = System.Windows.Controls.TextBlock;
+using Brush = System.Windows.Media.Brush;
 
 namespace LeigodPause.Views.Pages;
 
@@ -412,6 +412,7 @@ public partial class DashboardPage : INotifyPropertyChanged
             {
                 Content = i + "\n" + s,
                 Title = "暂停调用失败",
+                Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
                 CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
             };
             return messageBox.ShowDialogAsync();

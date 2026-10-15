@@ -20,6 +20,10 @@
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Page.Resources>
+    <!-- 错误 / 危险	SystemFillColorCriticalBrush	红 -->
+    <!-- 警告	SystemFillColorCautionBrush	黄 -->
+    <!-- 提示 / 注意	SystemFillColorAttentionBrush	蓝 -->
+    <!-- 成功	SystemFillColorSuccessBrush	绿 -->
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MinWidth="400" />
@@ -49,16 +53,17 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:SymbolIcon Grid.Column="0"
-                                       Symbol="AccessTime20"
+                                       Symbol="AccessTime24"
                                        FontSize="26"
                                        VerticalAlignment="Center"
                                        Margin="2,0,12,0"
                                        Foreground="{DynamicResource SystemFillColorAttentionBrush}" />
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <ui:TextBlock Text="系统服务状态" FontWeight="Medium" />
+                            <ui:TextBlock Text="系统服务状态"
+                                          FontWeight="Medium" />
                             <ui:TextBlock x:Name="RunningTextBlock"
                                           Text="{Binding IsRunningText}"
-                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                          Foreground="{DynamicResource AccentTextFillColorSecondaryBrush}" />
                         </StackPanel>
                         <StackPanel Grid.Column="2"
                                     Orientation="Horizontal"
@@ -134,6 +139,7 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <ui:TextBlock Text="{Binding LeigodCoreModel.PauseStatus}"
                                           VerticalAlignment="Center"
+                                          Foreground="{DynamicResource SystemFillColorCautionBrush}"
                                           Margin="0,0,12,0" />
                             <ui:Button Icon="{ui:SymbolIcon Pause48}"
                                        Content="立即暂停"
