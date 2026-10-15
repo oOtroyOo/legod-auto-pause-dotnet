@@ -1,6 +1,11 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Web.WebView2.Core;
+using Image = System.Drawing.Image;
 
 namespace LeigodPause.Views.Pages;
 
@@ -26,7 +31,16 @@ public partial class DashboardPage : INotifyPropertyChanged
     public LeigodCoreModel LeigodCoreModel { get; } = App.Host.Services.GetRequiredService<LeigodCoreModel>();
 
     private ILogger<DashboardPage> logger = App.Host.Services.GetRequiredService<ILogger<DashboardPage>>();
-    private ServiceIpcClient _ipcClient = App.Host.Services.GetRequiredService<ServiceIpcClient>();
+
+
+    public static readonly DependencyProperty GameImageIconProperty = DependencyProperty.Register(
+        nameof(GameImageIcon), typeof(ImageSource), typeof(DashboardPage), new PropertyMetadata(default(ImageSource)));
+
+    public ImageSource? GameImageIcon
+    {
+        get => (ImageSource)GetValue(GameImageIconProperty);
+        set => SetValue(GameImageIconProperty, value);
+    }
 
     public DashboardPage()
     {
@@ -51,6 +65,39 @@ public partial class DashboardPage : INotifyPropertyChanged
         // 去掉 Timer：改为「任务完成后等待间隔再循环」，避免 Dispatcher.Invoke 的委托参数错配。
         _pollCts = new CancellationTokenSource();
         _ = PollLoopAsync(_pollCts.Token);
+
+        LeigodCoreModel.PropertyChanged += LeigodCoreModelOnPropertyChanged;
+        MatchGameProcessToIcon();
+    }
+
+    private void LeigodCoreModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(LeigodCoreModel.MatchedGameProcess))
+        {
+            MatchGameProcessToIcon();
+
+            this.OnPropertyChanged(nameof(GameImageIcon));
+        }
+    }
+
+    private void MatchGameProcessToIcon()
+    {
+        var str = LeigodCoreModel.MatchedGameProcess;
+
+        if (str?.Split('\n').LastOrDefault() is string { Length: > 0 } processPath)
+        {
+            using var icon = Icon.ExtractAssociatedIcon(processPath);
+            if (icon == null) return;
+            var source = Imaging.CreateBitmapSourceFromHIcon(
+                icon.Handle,
+                Int32Rect.Empty,
+                BitmapSizeOptions.FromEmptyOptions());
+            GameImageIcon = source;
+        }
+        else
+        {
+            GameImageIcon = null;
+        }
     }
 
     private async Task PollLoopAsync(CancellationToken token)
@@ -224,6 +271,7 @@ public partial class DashboardPage : INotifyPropertyChanged
     private async void AppMainWindowOnClosing(object sender, CancelEventArgs e)
     {
         _pollCts?.Cancel();
+        LeigodCoreModel.PropertyChanged -= LeigodCoreModelOnPropertyChanged;
         var appWindow = ((Window)sender);
         if (WebView?.IsInitialized == true)
         {

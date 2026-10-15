@@ -9,7 +9,7 @@ public partial class SettingsPage
     {
         InitializeComponent();
 
-        AppVersionTextBlock.Text = $"WPF UI - Simple Demo - {GetAssemblyVersion()}";
+        AppVersionTextBlock.Text = $"雷神暂停工具 - {GetAssemblyVersion()}";
 
         if (ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark)
         {

@@ -9,7 +9,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:tray="http://schemas.lepo.co/wpfui/2022/xaml/tray"
     DataContext="{Binding RelativeSource={RelativeSource Self}}"
-    Title="WPF UI - Console Demo"
+    Title="雷神暂停工具"
     MinWidth="820"
     Width="820"
     Height="700"

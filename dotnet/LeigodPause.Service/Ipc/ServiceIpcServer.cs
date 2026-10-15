@@ -151,6 +151,8 @@ public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<Se
     }
 
     public IpcEnvelope? LastUserInfoError { get; set; }
+    public IpcEnvelope? LastPauseStateError { get; set; }
+    public bool HasClient => _currentPipe?.IsConnected == true;
 
     private async Task<(int Code, string? Msg, byte[]? Data)> DoRefreshAsync()
     {
@@ -258,19 +260,40 @@ public sealed class ServiceIpcServer(LeigodCoreModel leigodCoreModel, ILogger<Se
             Payload = string.IsNullOrEmpty(gameMsg) ? null : Encoding.UTF8.GetBytes(gameMsg),
         };
 
+        if (await PushToClient(envelope))
+        {
+            _lastPushedGameMsg = gameMsg;
+        }
+        else
+        {
+            logger.LogWarning("下发游戏进程结果失败（允许丢弃）");
+        }
+    }
+
+    public async Task<bool> PushToClient(IpcEnvelope envelope)
+    {
+        var pipe = _currentPipe;
+        if (pipe is null || !pipe.IsConnected)
+        {
+            return false;
+        }
+
+
         await _writeGate.WaitAsync().ConfigureAwait(false);
         try
         {
             await protobufMsgEncoder.Encode(pipe, envelope, CancellationToken.None).ConfigureAwait(false);
-            _lastPushedGameMsg = gameMsg;
+            return true;
         }
         catch (Exception e)
         {
-            logger.LogWarning(e, "下发游戏进程结果失败（允许丢弃）");
+            logger.LogWarning(e, "下发进程结果失败（允许丢弃）");
         }
         finally
         {
             _writeGate.Release();
         }
+
+        return false;
     }
 }

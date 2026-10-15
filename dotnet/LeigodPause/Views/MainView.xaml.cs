@@ -11,7 +11,7 @@ public partial class MainView
     public LeigodCoreModel LeigodCoreModel { get; } = App.Host.Services.GetRequiredService<LeigodCoreModel>();
     private ILogger<MainView> logger = App.Host.Services.GetRequiredService<ILogger<MainView>>();
     private ServiceIpcClient _ipcClient = App.Host.Services.GetRequiredService<ServiceIpcClient>();
-    private ConfigFile configFile = App.Host.Services.GetRequiredService<ConfigFile>(); 
+    private ConfigFile configFile = App.Host.Services.GetRequiredService<ConfigFile>();
     private CancellationTokenSource? _pollCts;
 
     public MainView()
@@ -127,7 +127,12 @@ public partial class MainView
         // 仅当服务未连接时回退为本地扫描，保证没装服务也能显示。
         if (!_ipcClient.IsConnected)
         {
-            await LeigodCoreModel.FindGameProcess().ConfigureAwait(false);
+            var loopTime = configFile.GetValue<float>("loop");
+            if (loopTime < 1) loopTime = 1;
+            if (DateTimeOffset.Now - LeigodCoreModel.MachedGameProcessTime > TimeSpan.FromSeconds(loopTime))
+            {
+                await LeigodCoreModel.FindGameProcess().ConfigureAwait(false);
+            }
         }
     }
 

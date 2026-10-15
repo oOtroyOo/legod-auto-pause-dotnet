@@ -188,28 +188,57 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
         }
     }
 
-    private void HandleIncomingFrame(IpcEnvelope frame)
+    private void HandleIncomingFrame(IpcEnvelope envelope)
     {
         // 服务端主动下发：不属于任何请求的响应，直接更新 UI，不发回执。
-        if (frame.Command == ServiceCommand.FindGameProcess)
+        if (envelope.Command == ServiceCommand.FindGameProcess)
         {
-            var msg = frame.Payload is { Length: > 0 } ? Encoding.UTF8.GetString(frame.Payload) : string.Empty;
+            var msg = envelope.Payload is { Length: > 0 } ? Encoding.UTF8.GetString(envelope.Payload) : string.Empty;
             ApplyGameProcessPush(msg);
             return;
+        }
+
+        if (envelope.Command == ServiceCommand.RefreshUserInfo)
+        {
+            if (envelope.Code != 0)
+            {
+                leigodCoreModel.Token = null;
+                var messageBox = new MessageBox
+                {
+                    Content = $"{envelope.Code}\n{envelope.Msg}",
+                    Title = "用户登录失效",
+                    CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
+                };
+                messageBox.ShowDialogAsync();
+            }
+        }
+
+        if (envelope.Command == ServiceCommand.PauseState)
+        {
+            if (envelope.Code != 0)
+            {
+                var messageBox = new MessageBox
+                {
+                    Content = $"{envelope.Code}\n{envelope.Msg}",
+                    Title = "暂停调用失败",
+                    CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
+                };
+                messageBox.ShowDialogAsync();
+            }
         }
 
         // 其余帧：回填给当前在途请求。校验 Command 匹配，避免超时迟到的响应串到下一个请求。
         TaskCompletionSource<IpcEnvelope>? pending = null;
         lock (_pendingLock)
         {
-            if (_pending != null && _pendingCommand == frame.Command)
+            if (_pending != null && _pendingCommand == envelope.Command)
             {
                 pending = _pending;
                 _pending = null;
             }
         }
 
-        pending?.TrySetResult(frame);
+        pending?.TrySetResult(envelope);
     }
 
     private void ApplyGameProcessPush(string msg)

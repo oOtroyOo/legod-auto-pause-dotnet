@@ -1,6 +1,8 @@
-﻿namespace LeigodPause.Service.Models;
+﻿using System.Collections.ObjectModel;
 
-public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogger<LeigodCoreModel> logger, ConfigFile configFile) : ObservableObject
+namespace LeigodPause.Service.Models;
+
+public partial class LeigodCoreModel : ObservableObject
 {
     // 在构造时（于 UI 线程解析服务）捕获同步上下文；
     // Windows 服务中为 null，此时直接赋值即可（无 UI 需更新）。
@@ -15,16 +17,18 @@ public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogg
     // 保护跨线程读写的状态字段（Service 端 Worker 线程 vs IPC 线程）。
     private readonly object _stateLock = new();
 
-    [ObservableProperty] private string? _token = configFile.GetValue<string>("account_token");
+    [ObservableProperty] private string? token;
     [ObservableProperty] private string? _userName;
     [ObservableProperty] private string? _pauseStatus;
     [ObservableProperty] private string? _matchedGameProcess;
+    private Process? gameProcess;
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsNotPaused))]
     private int? _pauseStatusId;
 
     [ObservableProperty] private JsonObject? _userInfoJson;
 
+    public ObservableCollection<string> GameListSource { get; }
 
     public bool IsNotPaused => PauseStatusId == 0;
     public const string Pause_url = "https://webapi.leigod.com/api/user/pause";
@@ -35,6 +39,20 @@ public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogg
 
 
     private TimeSpan _requestInfoDelay = TimeSpan.FromSeconds(5);
+    private readonly IHttpClientFactory httpClientFactory;
+    private readonly ILogger<LeigodCoreModel> logger;
+    private readonly ConfigFile configFile;
+
+    public LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogger<LeigodCoreModel> logger, ConfigFile configFile)
+    {
+        this.httpClientFactory = httpClientFactory;
+        this.logger = logger;
+        this.configFile = configFile;
+        this.token = configFile.GetValue<string>("account_token");
+        GameListSource = new ObservableCollection<string>(configFile.GetValue<string>("games")?.Split(',') ?? []);
+        GameListSource.CollectionChanged += (_, _) => { configFile.SetValue("games", string.Join(",", GameListSource)); };
+    }
+
     public bool RequestInfoTimeout => DateTimeOffset.Now - LastRequestInfoTime > _requestInfoDelay;
 
 
@@ -181,6 +199,17 @@ public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogg
 
         try
         {
+            if (gameProcess is { HasExited: false })
+            {
+                if (MatchedGameProcess?.Equals(Path.GetFileNameWithoutExtension(gameProcess.ProcessName)) == true)
+                {
+                    return MatchedGameProcess;
+                }
+            }
+
+            gameProcess?.Dispose();
+
+
             string[] games = configFile.GetValue<string>("games")?.Split(',') ?? Array.Empty<string>();
             foreach (var gameName in games)
             {
@@ -229,6 +258,7 @@ public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogg
                             MachedGameProcessTime = DateTimeOffset.Now;
                         }
 
+                        gameProcess = processesByName[0];
                         MatchedGameProcess = gameMsg;
                     }
 
@@ -239,7 +269,8 @@ public partial class LeigodCoreModel(IHttpClientFactory httpClientFactory, ILogg
                     // 释放进程句柄，避免每次扫描泄漏
                     foreach (var p in processesByName)
                     {
-                        p.Dispose();
+                        if (p != gameProcess)
+                            p.Dispose();
                     }
                 }
             }

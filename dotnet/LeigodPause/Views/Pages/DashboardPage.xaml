@@ -102,9 +102,13 @@
                               Margin="3"
                               VerticalAlignment="Center">
                 </ui:TextBlock>
+                <ui:Image Source="{Binding GameImageIcon}" />
+
                 <ui:TextBlock Text="{Binding LeigodCoreModel.MatchedGameProcess}"
                               Margin="3"
+                              Name="TextBlockMatchedGameProcess"
                               VerticalAlignment="Center">
+
                 </ui:TextBlock>
             </StackPanel>
         </StackPanel>

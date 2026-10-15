@@ -19,8 +19,8 @@
         <TextBlock
             FontSize="20"
             FontWeight="Medium"
-            Text="Personalization" />
-        <TextBlock Margin="0,12,0,0" Text="Theme" />
+            Text="设置" />
+        <TextBlock Margin="0,12,0,0" Text="主题" />
         <RadioButton
             x:Name="LightThemeRadioButton"
             Margin="0,12,0,0"
@@ -38,8 +38,8 @@
             Margin="0,24,0,0"
             FontSize="20"
             FontWeight="Medium"
-            Text="About WPF UI - Simple Demo" />
-
+            Text="关于" />
+        <ui:Button Content="Github"></ui:Button>
         <TextBlock x:Name="AppVersionTextBlock" Margin="0,12,0,0" />
     </StackPanel>
 </Page>

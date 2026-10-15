@@ -1,4 +1,6 @@
-﻿using System.Windows.Interop;
+﻿using System.IO.Pipes;
+using System.Threading;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LeigodPause.Views;
@@ -24,6 +26,12 @@ public partial class App
     }
 
     public static App CurrentApp => (App)Current;
+
+    // 单例相关：命名 Mutex 阻止重复启动，命名管道用于让已有实例把窗口前置。
+    private const string SingleInstanceMutexName = @"Global\LeigodPause_SingleInstance_9F2A4C7E-1B3D-4E5A-8C6B-2D4F1A0E9B3C";
+    private const string SingleInstancePipeName = @"LeigodPause_SingleInstance_Pipe";
+    private static Mutex? _singleInstanceMutex;
+    private static Thread? _singleInstancePipeThread;
 
     /// <summary>
     /// 把致命异常写入 leigod-crash.log，方便排查“双击无反应”类问题。
@@ -64,6 +72,28 @@ public partial class App
     /// </summary>
     private void OnStartup(object sender, StartupEventArgs e)
     {
+        // 单例校验：若已有实例在运行，通知其把窗口前置，并直接退出本进程。
+        if (!TryAcquireSingleInstance())
+        {
+            try
+            {
+                using var client = new NamedPipeClientStream(".", SingleInstancePipeName, PipeDirection.Out);
+                client.Connect(1000);
+                client.WriteByte(1);
+                client.Flush();
+            }
+            catch
+            {
+                // 已有实例存在但管道通知失败，直接退出即可。
+            }
+
+            Shutdown(0);
+            return;
+        }
+
+        // 启动管道服务器，接收后续重复启动实例的“前置窗口”请求。
+        StartSingleInstanceServer();
+
         try
         {
 #if !NETFRAMEWORK
@@ -79,7 +109,7 @@ public partial class App
             var ipcClient = Host.Services.GetRequiredService<ServiceIpcClient>();
             Task.Run(ipcClient.Connect);
 
-            var  configFile = Host.Services.GetRequiredService<ConfigFile>();
+            var configFile = Host.Services.GetRequiredService<ConfigFile>();
             configFile.OnSave += () => { _ = ipcClient.SendAsync(new IpcEnvelope() { Command = ServiceCommand.ReloadConfig }); };
         }
         catch (Exception ex)
@@ -116,6 +146,72 @@ public partial class App
     /// </summary>
     private void OnExit(object sender, ExitEventArgs e)
     {
+        _singleInstanceMutex?.Dispose();
+    }
+
+
+    // ===== 单例控制 =====
+
+    private static bool TryAcquireSingleInstance()
+    {
+        // 持有 Mutex 直到进程退出，阻止第二个实例启动。
+        _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out bool createdNew);
+        return createdNew;
+    }
+
+    private static void StartSingleInstanceServer()
+    {
+        _singleInstancePipeThread = new Thread(PipeServerLoop)
+        {
+            IsBackground = true,
+            Name = "LeigodPause-SingleInstance-Pipe"
+        };
+        _singleInstancePipeThread.Start();
+    }
+
+    private static void PipeServerLoop()
+    {
+        while (true)
+        {
+            try
+            {
+                using var server = new NamedPipeServerStream(
+                    SingleInstancePipeName, PipeDirection.In, 1,
+                    PipeTransmissionMode.Byte, PipeOptions.None);
+                server.WaitForConnection();
+                server.ReadByte(); // 忽略内容，仅用于触发前置窗口
+                server.Disconnect();
+                BringExistingInstanceToFront();
+            }
+            catch
+            {
+                // 管道异常时稍后重试，避免线程退出导致后续无法唤醒。
+                Thread.Sleep(300);
+            }
+        }
+    }
+
+    private static void BringExistingInstanceToFront()
+    {
+        Current.Dispatcher.Invoke(() =>
+        {
+            var main = Current.MainWindow;
+            if (main == null)
+            {
+                return;
+            }
+
+            if (main.WindowState == WindowState.Minimized)
+            {
+                main.WindowState = WindowState.Normal;
+            }
+
+            main.Show();
+            main.Activate();
+            // 短暂置顶再取消，确保窗口真正抢到前台焦点。
+            main.Topmost = true;
+            main.Topmost = false;
+        });
     }
 
 

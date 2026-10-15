@@ -151,7 +151,18 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
             await leigodCoreModel.RequestUserInfo((c, m) =>
             {
                 // leigodCoreModel.Token = null;
+
                 ipcServer.LastUserInfoError = new IpcEnvelope() { Command = ServiceCommand.RefreshUserInfo, Code = c, Msg = m };
+                if (c > 0)
+                {
+                    if (!ipcServer.HasClient)
+                        StartMainApp();
+                    else
+                    {
+                        _ = ipcServer.PushToClient(ipcServer.LastUserInfoError);
+                    }
+                }
+
                 return Task.CompletedTask;
             }).ConfigureAwait(false);
         }
@@ -166,11 +177,38 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
             await leigodCoreModel.SendPauseState((c, m) =>
             {
                 // leigodCoreModel.Token = null;
-                ipcServer.LastUserInfoError = new IpcEnvelope() { Command = ServiceCommand.RefreshUserInfo, Code = c, Msg = m };
+                ipcServer.LastPauseStateError = new IpcEnvelope() { Command = ServiceCommand.PauseState, Code = c, Msg = m };
+                if (c > 0)
+                {
+                    if (!ipcServer.HasClient)
+                        StartMainApp();
+                    else
+                    {
+                        _ = ipcServer.PushToClient(ipcServer.LastPauseStateError);
+                    }
+                }
+
                 return Task.CompletedTask;
             }).ConfigureAwait(false);
         }
 
         logger.LogInformation("SendPauseState Finish");
+    }
+
+    public void StartMainApp()
+    {
+        var appName = Path.GetFileName(Process.GetCurrentProcess().MainModule!.FileName).Replace(".Service", "");
+        logger.LogInformation("启动主应用 {appName} ", appName);
+        try
+        {
+            if (Process.GetProcessesByName(appName).Length > 0) return;
+
+            var appPath = Path.Combine(AppContext.BaseDirectory, appName);
+            Process.Start(appPath);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "不能启动主应用 {appName}", appName);
+        }
     }
 }

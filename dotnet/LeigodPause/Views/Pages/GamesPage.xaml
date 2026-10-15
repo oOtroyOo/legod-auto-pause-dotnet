@@ -3,10 +3,67 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      xmlns:local="clr-namespace:LeigodPause.Views.Pages"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+      ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+      Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       mc:Ignorable="d"
-      Title="Games" Height="450" Width="800">
-    <Grid>
-        
-    </Grid>
+      Title="Games"
+      d:DesignWidth="400"
+      d:DesignHeight="300"
+      DataContext="{Binding RelativeSource={RelativeSource Self}}">
+
+    <StackPanel Margin="12">
+
+        <Grid HorizontalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ui:TextBlock Grid.Column="0" Text="添加游戏进程"
+                          FontSize="18"
+                          FontWeight="SemiBold"
+                          Margin="0,0,0,2" />
+            <ui:Button Grid.Column="1"
+                       Margin="0,0,4,0"
+                       Click="AddOnClick"
+                       Icon="{ui:SymbolIcon Add48}" />
+        </Grid>
+
+        <ui:Card Margin="4">
+            <ui:DynamicScrollViewer
+                VerticalScrollBarVisibility="Auto">
+                <ui:ListView ItemsSource="{Binding LeigodCoreModel.GameListSource}"
+                             Margin="0,2,0,0"
+                             AllowDrop="True"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ui:ListView.Resources>
+                        <Style TargetType="ui:ListViewItem">
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ui:ListView.Resources>
+                    <ui:ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:TextBlock Grid.Column="0" Text="{Binding}" />
+                                <ui:Button
+                                    Grid.Column="1"
+                                    Icon="{ui:SymbolIcon Delete48}"
+                                    Click="ListItemOnClick">
+                                </ui:Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ui:ListView.ItemTemplate>
+                </ui:ListView>
+            </ui:DynamicScrollViewer>
+        </ui:Card>
+    </StackPanel>
+
 </Page>
