@@ -27,91 +27,144 @@
         </Grid.ColumnDefinitions>
 
         <!-- 左侧：Dashboard -->
-        <StackPanel Grid.Column="0" Margin="12" VerticalAlignment="Top">
+        <ScrollViewer Grid.Column="0"
+                      Padding="14,14,10,14"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <ui:TextBlock Text="控制面板"
+                              FontSize="22"
+                              FontWeight="SemiBold"
+                              Margin="0,0,0,2" />
+                <ui:TextBlock Text="雷神加速器自动暂停工具"
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                              Margin="0,0,0,14" />
 
-            <StackPanel Margin="5"
-                        Orientation="Horizontal">
-                <Label Content="系统服务状态：" VerticalAlignment="Center"></Label>
-                <ui:TextBlock x:Name="RunningTextBlock" Text="{Binding IsRunningText}" VerticalAlignment="Center" />
-                <ui:Button x:Name="RunButton" Content="启动服务" Click="RunButton_OnClick" Visibility="{Binding RunningBtnVisible}">
-                    <ui:Button.Icon>
-                        <ui:ImageIcon Source="{Binding Source={x:Static Application.Current},Path=(app:App.UacImageSource).Value}" />
-                    </ui:Button.Icon>
-                </ui:Button>
-                <ui:Button x:Name="InstallButton" Content="{Binding InstallButtonText}" Click="InstallButton_OnClick">
-                    <ui:Button.Icon>
-                        <ui:ImageIcon Source="{Binding Source={x:Static Application.Current},Path=(app:App.UacImageSource).Value}" />
-                    </ui:Button.Icon>
-                </ui:Button>
+                <!-- 系统服务状态 -->
+                <ui:Card Margin="0,0,0,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Grid.Column="0"
+                                       Symbol="AccessTime20"
+                                       FontSize="26"
+                                       VerticalAlignment="Center"
+                                       Margin="2,0,12,0"
+                                       Foreground="{DynamicResource SystemFillColorAttentionBrush}" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <ui:TextBlock Text="系统服务状态" FontWeight="Medium" />
+                            <ui:TextBlock x:Name="RunningTextBlock"
+                                          Text="{Binding IsRunningText}"
+                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <ui:Button x:Name="RunButton"
+                                       Content="启动服务"
+                                       Margin="0,0,8,0"
+                                       Click="RunButton_OnClick"
+                                       Visibility="{Binding RunningBtnVisible}">
+                                <ui:Button.Icon>
+                                    <ui:ImageIcon Source="{Binding Source={x:Static Application.Current}, Path=(app:App.UacImageSource).Value}" />
+                                </ui:Button.Icon>
+                            </ui:Button>
+                            <ui:Button x:Name="InstallButton"
+                                       Content="{Binding InstallButtonText}"
+                                       Click="InstallButton_OnClick">
+                                <ui:Button.Icon>
+                                    <ui:ImageIcon Source="{Binding Source={x:Static Application.Current}, Path=(app:App.UacImageSource).Value}" />
+                                </ui:Button.Icon>
+                            </ui:Button>
+                        </StackPanel>
+                    </Grid>
+                </ui:Card>
+
+                <!-- 账号 -->
+                <ui:Card Margin="0,0,0,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" MinWidth="72" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Top"
+                                    Margin="2,2,0,0">
+                            <ui:SymbolIcon Symbol="Person20"
+                                           Margin="0,0,8,0"
+                                           VerticalAlignment="Center" />
+                            <ui:TextBlock Text="账号"
+                                          FontWeight="Medium"
+                                          VerticalAlignment="Center" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Vertical"
+                                    HorizontalAlignment="Right">
+                            <StackPanel Orientation="Horizontal"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Right">
+                                <ui:TextBlock Text="{Binding LeigodCoreModel.UserName}"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,12,0" />
+                                <ui:Button Icon="{ui:SymbolIcon CommentCheckmark48}"
+                                           Content="检查 Token"
+                                           Click="TokenBtn_Click" />
+                            </StackPanel>
+                            <ui:TextBlock Text="网页登录后点击“检查 Token”以同步账号状态"
+                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                          Margin="0,4,0,0"
+                                          TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </ui:Card>
+
+                <!-- 暂停状态 -->
+                <ui:CardControl Margin="0,0,0,12">
+                    <ui:CardControl.Icon>
+                        <ui:SymbolIcon Symbol="Pause20" />
+                    </ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <ui:TextBlock Text="暂停状态" FontWeight="Medium" />
+                    </ui:CardControl.Header>
+                    <ui:CardControl.Content>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <ui:TextBlock Text="{Binding LeigodCoreModel.PauseStatus}"
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,12,0" />
+                            <ui:Button Icon="{ui:SymbolIcon Pause48}"
+                                       Content="立即暂停"
+                                       Visibility="{Binding LeigodCoreModel.IsNotPaused, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                       Click="PauseBtn_Click" />
+                        </StackPanel>
+                    </ui:CardControl.Content>
+                </ui:CardControl>
+
+                <!-- 游戏进程 -->
+                <ui:CardControl Margin="0,0,0,12">
+                    <ui:CardControl.Icon>
+                        <ui:SymbolIcon Symbol="Window48" />
+                    </ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <ui:TextBlock Text="游戏进程" FontWeight="Medium" />
+                    </ui:CardControl.Header>
+                    <ui:CardControl.Content>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <ui:Image Source="{Binding GameImageIcon}"
+                                      Width="24" Height="24"
+                                      Margin="0,0,8,0" />
+                            <ui:TextBlock Text="{Binding LeigodCoreModel.MatchedGameProcess}"
+                                          Name="TextBlockMatchedGameProcess"
+                                          VerticalAlignment="Center" />
+                        </StackPanel>
+                    </ui:CardControl.Content>
+                </ui:CardControl>
 
             </StackPanel>
-            <StackPanel
-                Margin="5"
-                Orientation="Horizontal">
-                <ui:Button
-                    Margin="0,0,4,0"
-                    Icon="{ui:SymbolIcon CommentCheckmark48}"
-                    Content="检查token"
-                    Click="TokenBtn_Click" />
-                <Label Content="网页登录后点击检查" VerticalAlignment="Center"></Label>
-                <ui:Button
-                    Visibility="Collapsed"
-                    Click="OnBaseButtonClick"
-                    Content="Click me!"
-                    Icon="{ui:SymbolIcon Fluent24}" />
-                <ui:TextBlock
-                    Visibility="Collapsed"
-                    x:Name="CounterTextBlock"
-                    Margin="12,0,0,0"
-                    VerticalAlignment="Center" />
-            </StackPanel>
-            <StackPanel
-                Margin="5"
-                Orientation="Horizontal">
-                <ui:TextBlock Text="昵称"
-                              Margin="3"
-                              VerticalAlignment="Center">
-                </ui:TextBlock>
-                <ui:TextBlock Text="{Binding LeigodCoreModel.UserName}"
-                              Margin="3"
-                              VerticalAlignment="Center">
-                </ui:TextBlock>
-            </StackPanel>
-            <StackPanel
-                Margin="5"
-                Orientation="Horizontal">
-                <ui:TextBlock Text="暂停状态"
-                              Margin="3"
-                              VerticalAlignment="Center">
-                </ui:TextBlock>
-                <ui:TextBlock Text="{Binding LeigodCoreModel.PauseStatus}"
-                              Margin="3"
-                              VerticalAlignment="Center">
-                </ui:TextBlock>
-                <ui:Button
-                    Margin="4"
-                    Icon="{ui:SymbolIcon Pause48}"
-                    Content="立即暂停"
-                    Visibility="{Binding LeigodCoreModel.IsNotPaused, Converter={StaticResource BooleanToVisibilityConverter}}"
-                    Click="PauseBtn_Click" />
-            </StackPanel>
-            <StackPanel
-                Margin="5"
-                Orientation="Horizontal">
-                <ui:TextBlock Text="游戏进程"
-                              Margin="3"
-                              VerticalAlignment="Center">
-                </ui:TextBlock>
-                <ui:Image Source="{Binding GameImageIcon}" />
-
-                <ui:TextBlock Text="{Binding LeigodCoreModel.MatchedGameProcess}"
-                              Margin="3"
-                              Name="TextBlockMatchedGameProcess"
-                              VerticalAlignment="Center">
-
-                </ui:TextBlock>
-            </StackPanel>
-        </StackPanel>
+        </ScrollViewer>
 
         <!-- 右侧：WebView -->
         <Grid Grid.Column="1">

@@ -5,7 +5,9 @@ using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Web.WebView2.Core;
+using Wpf.Ui.Controls;
 using Image = System.Drawing.Image;
+using TextBlock = System.Windows.Controls.TextBlock;
 
 namespace LeigodPause.Views.Pages;
 
@@ -19,8 +21,6 @@ public partial class DashboardPage : INotifyPropertyChanged
     public string IsRunningText => IsRunning ? "运行中" : "未运行";
     public bool IsRunning => _isRunning;
     public Visibility RunningBtnVisible => (Utils.IsInstalled() && !IsRunning) ? Visibility.Visible : Visibility.Collapsed;
-
-    private int _counter = 0;
 
 
     private const string leigodLoginUrl = "https://www.leigod.com/mlogin";
@@ -46,8 +46,6 @@ public partial class DashboardPage : INotifyPropertyChanged
     {
         DataContext = this;
         InitializeComponent();
-
-        CounterTextBlock.SetCurrentValue(TextBlock.TextProperty, _counter.ToString());
 
         // 不调用 this.ApplyTheme()：否则会给本页挂一个“构造时固定”的本地主题字典，
         // 就近遮蔽全局/主窗口的主题画刷，导致设置页切换主题时本页文字颜色不更新。
@@ -142,14 +140,6 @@ public partial class DashboardPage : INotifyPropertyChanged
         }
 
         OnPropertyChanged(nameof(RunningBtnVisible));
-    }
-
-    private void OnBaseButtonClick(object sender, RoutedEventArgs e)
-    {
-        CounterTextBlock.SetCurrentValue(
-            TextBlock.TextProperty,
-            (++_counter).ToString()
-        );
     }
 
     private void AdminBtn_OnClick(object sender, RoutedEventArgs e)
