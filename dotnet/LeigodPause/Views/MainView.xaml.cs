@@ -1,5 +1,3 @@
-using MessageBoxResult = Wpf.Ui.Controls.MessageBoxResult;
-
 namespace LeigodPause.Views;
 
 public partial class MainView
@@ -140,16 +138,13 @@ public partial class MainView
 
     async Task HandleUserInfoFail(int code, string? msg)
     {
-        var messageBox = new MessageBox
-        {
-            Content = $"{code}\n{msg}",
-            Title = "用户登录失效",
-            CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
-        };
-        var diag = await messageBox.ShowDialogAsync();
-        if (diag != MessageBoxResult.None)
-        {
-            LeigodCoreModel.Token = null;
-        }
+        // var messageBox = new MessageBox
+        // {
+        //     Content = $"{code}\n{msg}",
+        //     Title = "用户登录失效",
+        //     CloseButtonAppearance = Wpf.Ui.Controls.ControlAppearance.Danger
+        // };
+        // await messageBox.ShowDialogAsync();
+        // LeigodCoreModel.Token = null;
     }
 }

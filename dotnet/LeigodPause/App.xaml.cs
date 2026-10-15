@@ -1,5 +1,4 @@
 ﻿using System.IO.Pipes;
-using System.Threading;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;

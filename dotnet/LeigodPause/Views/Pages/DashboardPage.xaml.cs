@@ -3,10 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
-using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Web.WebView2.Core;
-using Wpf.Ui.Controls;
-using Image = System.Drawing.Image;
 using TextBlock = System.Windows.Controls.TextBlock;
 
 namespace LeigodPause.Views.Pages;
