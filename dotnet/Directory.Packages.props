@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <GenerateProgramFile>false</GenerateProgramFile>
+<!--    <GenerateProgramFile>false</GenerateProgramFile>-->
     <!-- Microsoft.NET.Test.Sdk 会带Main函数导致重复定义-->
   </PropertyGroup>
   <ItemGroup>
@@ -31,13 +31,5 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Text.Json" />
   </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <PackageReference Include="JetBrains.Profiler.Api" />
-    <PackageReference Include="coverlet.collector" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="NUnit" />
-    <PackageReference Include="NUnit.Analyzers" />
-    <PackageReference Include="NUnit3TestAdapter" />
-    <Using Include="NUnit.Framework" />
-  </ItemGroup>
+
 </Project>

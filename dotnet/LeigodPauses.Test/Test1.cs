@@ -1,4 +1,10 @@
-﻿namespace LeigodPause.Service;
+﻿using System.Diagnostics;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using LeigodPause.Service.Network;
+
+namespace LeigodPause.Service;
 
 #if DEBUG
 
@@ -10,51 +16,6 @@ public class Test1
 #if NETCOREAPP
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif
-    }
-
-    [Test]
-    public void TestEncoding()
-    {
-        /*
-         *
-繁体中文
-OEMCP=950
-OEMEncoding=System.Text.DBCSCodePageEncoding codePage=950 name="Chinese Traditional (Big5)"
-ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=950 name="Chinese Traditional (Big5)"
-
-简体中文
-OEMCP=936
-OEMEncoding=System.Text.DBCSCodePageEncoding codePage=936 name="Chinese Simplified (GB2312)"
-ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=936 name="Chinese Simplified (GB2312)"
-[SC] OpenService 失败 1060:
-
-日语
-OEMCP=932
-OEMEncoding=System.Text.DBCSCodePageEncoding codePage=932 name="日本語 (シフト JIS)"
-ConsoleEncoding=System.Text.DBCSCodePageEncoding codePage=932 name="日本語 (シフト JIS)"
-[SC] OpenService FAILED 1060:
-
-         */
-        Console.WriteLine("OEMCP=" + Utils.GetOEMCP());
-        var oemEncoding = Utils.GetOEMEncoding();
-        Console.WriteLine($"OEMEncoding={oemEncoding} codePage={oemEncoding.CodePage} name=\"{oemEncoding.EncodingName}\" ");
-        var consoleEncoding = Utils.GetConsoleEncoding();
-        Console.WriteLine($"ConsoleEncoding={consoleEncoding} codePage={consoleEncoding.CodePage} name=\"{consoleEncoding.EncodingName}\"");
-        // cmd /c "exit"
-        var process = Process.Start(new ProcessStartInfo("sc.exe", $"""
-                                                                    qc 000
-                                                                    """)
-        {
-            Verb = "runas",
-            WorkingDirectory = Environment.CurrentDirectory,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            StandardOutputEncoding = consoleEncoding,
-        });
-        process.WaitForExit();
-        var output = process.StandardOutput.ReadToEnd();
-        Console.WriteLine(output);
-        Assert.That(output.Contains("指定的服务未安装"));
     }
 
     [Test]
