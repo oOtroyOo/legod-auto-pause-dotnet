@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
@@ -39,6 +40,8 @@ public partial class DashboardPage : INotifyPropertyChanged
         set => SetValue(GameImageIconProperty, value);
     }
 
+    public Brush PauseStatusTextBrush => (Brush)App.CurrentApp.Resources[LeigodCoreModel?.IsNotPaused == true ? "SystemFillColorCautionBrush" : "SystemFillColorAttentionBrush"];
+
     public DashboardPage()
     {
         DataContext = this;
@@ -72,6 +75,11 @@ public partial class DashboardPage : INotifyPropertyChanged
             MatchGameProcessToIcon();
 
             this.OnPropertyChanged(nameof(GameImageIcon));
+        }
+
+        if (e.PropertyName == nameof(LeigodCoreModel.PauseStatusId))
+        {
+            this.OnPropertyChanged(nameof(PauseStatusTextBrush));
         }
     }
 
@@ -220,6 +228,11 @@ public partial class DashboardPage : INotifyPropertyChanged
     {
         UrlText.Text = e.Uri;
         ProgressBar.Visibility = Visibility.Visible;
+
+        if (new Uri(e.Uri).Host == new Uri(leigodPersonalUrl).Host)
+        {
+            _ = WriteTokenToBrowser();
+        }
     }
 
     private void WebView_OnNavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
@@ -239,7 +252,19 @@ public partial class DashboardPage : INotifyPropertyChanged
         WebView.CoreWebView2.WindowCloseRequested += CoreWebView2_WindowCloseRequested;
         WebView.CoreWebView2.Settings.UserAgent = HttpClientExtensions.UserAgent;
         WebView.Source = new Uri(leigodPersonalUrl);
-        // WebView.Source = new Uri(leigodLoginUrl);
+    }
+
+
+    async Task WriteTokenToBrowser()
+    {
+        if (!string.IsNullOrEmpty(LeigodCoreModel.Token))
+        {
+            string command = $$"""
+                               localStorage.setItem("account_token",JSON.stringify({"account_token":"{{LeigodCoreModel.Token}}"}))
+                               """.Trim();
+            var result = await WebView.ExecuteScriptAsync(command);
+            logger.LogInformation("WriteTokenResult: {result}", result);
+        }
     }
 
     private void UrlText_OnKeyDown(object sender, KeyEventArgs e)
@@ -358,7 +383,7 @@ public partial class DashboardPage : INotifyPropertyChanged
     {
         try
         {
-            var result = (await WebView.ExecuteScriptAsync("localStorage.getItem('account_token')"))?.Trim('"');
+            // var result = (await WebView.ExecuteScriptAsync("localStorage.getItem('account_token')"))?.Trim('"');
             var token = (await WebView.ExecuteScriptAsync("JSON.parse(localStorage.getItem('account_token')).account_token"))?.Trim('"');
             if (!string.IsNullOrEmpty(token) && token != "null")
             {
@@ -383,7 +408,6 @@ public partial class DashboardPage : INotifyPropertyChanged
             {
                 await Dispatcher.InvokeAsync(async () =>
                 {
-                    LeigodCoreModel.Token = string.Empty;
                     var messageBox = new MessageBox
                     {
                         Content = "没有找到Token",

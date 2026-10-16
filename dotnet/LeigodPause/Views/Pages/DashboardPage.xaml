@@ -139,7 +139,7 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <ui:TextBlock Text="{Binding LeigodCoreModel.PauseStatus}"
                                           VerticalAlignment="Center"
-                                          Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                                          Foreground="{Binding PauseStatusTextBrush}"
                                           Margin="0,0,12,0" />
                             <ui:Button Icon="{ui:SymbolIcon Pause48}"
                                        Content="立即暂停"
