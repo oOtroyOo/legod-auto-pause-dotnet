@@ -2,6 +2,7 @@
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using LeigodPause.Models;
 using LeigodPause.Views;
 using Microsoft.Extensions.Hosting;
 
@@ -42,13 +43,14 @@ public partial class App
         try
         {
             var path = Path.Combine(AppContext.BaseDirectory, "log/leigod-crash.log");
-            File.AppendAllText(path, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {where}:\n{ex}\n\n");
+            var message = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {where}:\n{ex}\n\n";
+            Console.WriteLine(message);
+            File.AppendAllText(path, message);
         }
         catch
         {
         }
     }
-
 
     public static readonly IHost Host = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder()
         .ConfigureServices((context, services) =>
@@ -62,6 +64,7 @@ public partial class App
                 })
                 .AddLeigodHttpClient()
                 .AddSingleton<MainView>()
+                .AddSingleton<MainViewCommand>()
                 .AddSingleton<ConfigFile>()
                 .AddSingleton<LeigodCoreModel>()
                 .AddSingleton<ServiceIpcClient>()
@@ -112,12 +115,17 @@ public partial class App
 
             var configFile = Host.Services.GetRequiredService<ConfigFile>();
             configFile.OnSave += () => { _ = ipcClient.SendAsync(new IpcEnvelope() { Command = ServiceCommand.ReloadConfig }); };
+            MainView mainView = Host.Services.GetRequiredService<MainView>();
+            // 框架已通过自动生成的 Main() 启动了 Dispatcher，这里不能再调用 this.Run()，
+            // 否则会抛“应用程序已经在运行调度程序”。改为设置 MainWindow 并显示即可。
+            this.MainWindow = mainView;
+            mainView.Show();
         }
         catch (Exception ex)
         {
-            LogFatal(ex, "OnStartup");
             System.Windows.MessageBox.Show(ex.ToString(), "LeigodPause 启动失败", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             Shutdown(-1);
+            Environment.Exit(-1);
         }
     }
 

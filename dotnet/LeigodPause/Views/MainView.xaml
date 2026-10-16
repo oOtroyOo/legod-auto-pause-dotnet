@@ -20,6 +20,8 @@
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Closing="MainView_OnClosing"
     Loaded="MainView_OnLoaded"
+    Activated="MainView_OnActivated"
+    Deactivated="MainView_OnDeactivated"
     ExtendsContentIntoTitleBar="True"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
@@ -62,14 +64,14 @@
                     NavigationCacheMode="Enabled"
                     TargetPageType="{x:Type pages:DashboardPage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Home24" />
+                        <ui:SymbolIcon Symbol="Home20" FontSize="26" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem
                     NavigationCacheMode="Enabled"
                     TargetPageType="{x:Type pages:GamesPage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Games24" />
+                        <ui:SymbolIcon Symbol="Games20" FontSize="26" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
@@ -79,7 +81,7 @@
                     NavigationCacheMode="Enabled"
                     TargetPageType="{x:Type pages:SettingsPage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Settings24" />
+                        <ui:SymbolIcon Symbol="Settings20" FontSize="26" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
@@ -91,12 +93,12 @@
             Grid.Row="0"
             Name="TrayIcon"
             FocusOnLeftClick="True"
+            LeftClick="TrayIcon_OnLeftClick"
             Icon="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=Icon}"
-            MenuOnRightClick="True"
-            TooltipText="WPF UI Gallery">
-            <!-- <tray:NotifyIcon.Menu> -->
-            <!--     <ContextMenu ItemsSource="{Binding TrayMenuItems, Mode=OneWay}" /> -->
-            <!-- </tray:NotifyIcon.Menu> -->
+            TooltipText="{Binding Title}">
+            <tray:NotifyIcon.Menu>
+                <ContextMenu ItemsSource="{Binding TrayMenuItems, Mode=OneWay}" />
+            </tray:NotifyIcon.Menu>
         </tray:NotifyIcon>
     </Grid>
 </ui:FluentWindow>

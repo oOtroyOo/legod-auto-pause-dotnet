@@ -65,7 +65,6 @@ public partial class DashboardPage : INotifyPropertyChanged
         _ = PollLoopAsync(_pollCts.Token);
 
         LeigodCoreModel.PropertyChanged += LeigodCoreModelOnPropertyChanged;
-        MatchGameProcessToIcon();
     }
 
     private void LeigodCoreModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -99,7 +98,8 @@ public partial class DashboardPage : INotifyPropertyChanged
         }
         else
         {
-            GameImageIcon = null;
+            if (GameImageIcon != null)
+                GameImageIcon = null;
         }
     }
 

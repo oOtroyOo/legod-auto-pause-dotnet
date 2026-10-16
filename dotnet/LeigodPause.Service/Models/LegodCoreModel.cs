@@ -7,6 +7,7 @@ public partial class LeigodCoreModel : ObservableObject
     // 在构造时（于 UI 线程解析服务）捕获同步上下文；
     // Windows 服务中为 null，此时直接赋值即可（无 UI 需更新）。
     private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
+    private readonly int threadId = Thread.CurrentThread.ManagedThreadId;
 
 
     // 三类操作各自独立的在途标志，互不阻塞：刷新 / 暂停 / 扫进程。
@@ -93,18 +94,7 @@ public partial class LeigodCoreModel : ObservableObject
                 var data = jsonObject?["data"] as JsonObject ?? jsonObject;
                 if (data is { Count: > 0 })
                 {
-                    await InvokeOnUi(() =>
-                    {
-                        try
-                        {
-                            ApplyFields(data);
-                            return Task.CompletedTask;
-                        }
-                        catch (Exception exception)
-                        {
-                            return Task.FromException(exception);
-                        }
-                    });
+                    ApplyFields(data);
                 }
                 else
                 {
@@ -291,27 +281,18 @@ public partial class LeigodCoreModel : ObservableObject
     // 统一切回 UI 线程执行，避免跨线程更新 DependencyProperty
     private async Task InvokeOnUi(Action action)
     {
-        if (_uiContext != null)
-        {
-            var wait = new TaskCompletionSource<object?>();
-            _uiContext.Post(_ =>
-            {
-                action();
-                wait.SetResult(null);
-            }, null);
-            await wait.Task;
-        }
-        else
+        await InvokeOnUi(() =>
         {
             action();
-        }
+            return Task.CompletedTask;
+        });
     }
 
     // 统一切回 UI 线程执行，避免跨线程更新 DependencyProperty；
     // 正确传播 action 内部异常（不再用 ContinueWith 静默吞掉）。
     private async Task InvokeOnUi(Func<Task> action)
     {
-        if (_uiContext != null)
+        if (_uiContext != null && threadId != Thread.CurrentThread.ManagedThreadId)
         {
             var wait = new TaskCompletionSource<object?>();
             _uiContext.Post(async _ =>
