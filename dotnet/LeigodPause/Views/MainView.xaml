@@ -25,7 +25,9 @@
     ExtendsContentIntoTitleBar="True"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
-
+    <ui:FluentWindow.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </ui:FluentWindow.Resources>
     <!-- <ui:FluentWindow.InputBindings> -->
     <!--     <KeyBinding -->
     <!--         Key="F" -->
@@ -97,7 +99,17 @@
             Icon="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=Icon}"
             TooltipText="{Binding Title}">
             <tray:NotifyIcon.Menu>
-                <ContextMenu ItemsSource="{Binding TrayMenuItems, Mode=OneWay}" />
+                <ContextMenu>
+                    <MenuItem Header="{Binding LeigodCoreModel.MatchedGameProcess}"
+                              IsEnabled="False"
+                              Visibility="{Binding LeigodCoreModel.IsMatchedGameProcess,Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <MenuItem.Icon>
+                            <ui:Image Source="{Binding GameImageIcon}" Width="16" Height="16" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="暂停并退出" Tag="tray_pause_close" Command="{Binding MainViewCommand.MenuItemPauseCloseViewCommand }"></MenuItem>
+                    <MenuItem Header="退出" Tag="tray_close" Command="{Binding MainViewCommand.MenuItemCloseViewCommand }"></MenuItem>
+                </ContextMenu>
             </tray:NotifyIcon.Menu>
         </tray:NotifyIcon>
     </Grid>

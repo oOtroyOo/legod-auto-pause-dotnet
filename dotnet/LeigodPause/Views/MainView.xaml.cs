@@ -1,17 +1,30 @@
-using System.Windows.Input;
+using System.Runtime.CompilerServices;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using LeigodPause.Models;
 using Wpf.Ui.Tray.Controls;
 
 namespace LeigodPause.Views;
 
-public partial class MainView
+public partial class MainView : INotifyPropertyChanged
 {
-    public ObservableCollection<Wpf.Ui.Controls.MenuItem> TrayMenuItems { get; } = [];
     public LeigodCoreModel LeigodCoreModel { get; } = App.Host.Services.GetRequiredService<LeigodCoreModel>();
     private ILogger<MainView> logger = App.Host.Services.GetRequiredService<ILogger<MainView>>();
     private ServiceIpcClient _ipcClient = App.Host.Services.GetRequiredService<ServiceIpcClient>();
     private ConfigFile configFile = App.Host.Services.GetRequiredService<ConfigFile>();
-    private MainViewCommand MainViewCommand { get; } = App.Host.Services.GetRequiredService<MainViewCommand>();
+    public MainViewCommand MainViewCommand { get; } = App.Host.Services.GetRequiredService<MainViewCommand>();
+
+    public static readonly DependencyProperty GameImageIconProperty = DependencyProperty.Register(
+        nameof(GameImageIcon), typeof(ImageSource), typeof(MainView), new PropertyMetadata(default(ImageSource)));
+
+    public ImageSource GameImageIcon
+    {
+        get { return (ImageSource)GetValue(GameImageIconProperty); }
+        set { SetValue(GameImageIconProperty, value); }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
 
     private CancellationTokenSource? _pollCts;
 
@@ -22,14 +35,28 @@ public partial class MainView
 
     public MainView()
     {
-        TrayMenuItems.Add(new Wpf.Ui.Controls.MenuItem { Header = "暂停并退出", Tag = "tray_pause_close", Command = MainViewCommand.MenuItemPauseCloseViewCommand });
-        TrayMenuItems.Add(new Wpf.Ui.Controls.MenuItem { Header = "退出", Tag = "tray_close", Command = MainViewCommand.MenuItemCloseViewCommand });
-
-
         InitializeComponent();
+        // 托盘菜单不在常规视觉树中，不会继承 MainView 的 DataContext，需手动指定绑定源
+        TrayIcon.Menu.DataContext = this;
         UiApplication.Current.MainWindow = this;
         logger.LogInformation("games: {games}", configFile.GetValue<string>("games"));
+        LeigodCoreModel.PropertyChanged += LeigodCoreModelOnPropertyChanged;
         this.ApplyTheme();
+    }
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    private void LeigodCoreModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(LeigodCoreModel.MatchedGameProcess))
+        {
+            MatchGameProcessToIcon();
+
+            this.OnPropertyChanged(nameof(GameImageIcon));
+        }
     }
 
     private void OnRootNavigationLoaded(object sender, RoutedEventArgs e)
@@ -234,6 +261,34 @@ public partial class MainView
         // };
         // await messageBox.ShowDialogAsync();
         // LeigodCoreModel.Token = null;
+    }
+
+    private void MatchGameProcessToIcon()
+    {
+        var str = LeigodCoreModel.MatchedGameProcess;
+        var processPath = str?.Split('\n').LastOrDefault();
+
+        // MatchedGameProcess 退化时可能只有进程名（无完整路径），ExtractAssociatedIcon 会抛异常，需容错
+        if (!string.IsNullOrEmpty(processPath) && System.IO.File.Exists(processPath))
+        {
+            try
+            {
+                using var icon = System.Drawing.Icon.ExtractAssociatedIcon(processPath);
+                if (icon == null) return;
+                GameImageIcon = Imaging.CreateBitmapSourceFromHIcon(
+                    icon.Handle,
+                    Int32Rect.Empty,
+                    BitmapSizeOptions.FromEmptyOptions());
+                return;
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(ex, "提取进程图标失败：{path}", processPath);
+            }
+        }
+
+        if (GameImageIcon != null)
+            GameImageIcon = null;
     }
 
     private void TrayIcon_OnLeftClick(NotifyIcon sender, RoutedEventArgs e)

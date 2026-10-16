@@ -31,15 +31,7 @@ public partial class DashboardPage : INotifyPropertyChanged
     private ILogger<DashboardPage> logger = App.Host.Services.GetRequiredService<ILogger<DashboardPage>>();
 
 
-    public static readonly DependencyProperty GameImageIconProperty = DependencyProperty.Register(
-        nameof(GameImageIcon), typeof(ImageSource), typeof(DashboardPage), new PropertyMetadata(default(ImageSource)));
-
-    public ImageSource? GameImageIcon
-    {
-        get => (ImageSource)GetValue(GameImageIconProperty);
-        set => SetValue(GameImageIconProperty, value);
-    }
-
+    public ImageSource? GameImageIcon => (App.CurrentApp.MainWindow as MainView)?.GameImageIcon;
     public Brush PauseStatusTextBrush => (Brush)App.CurrentApp.Resources[LeigodCoreModel?.IsNotPaused == true ? "SystemFillColorCautionBrush" : "SystemFillColorAttentionBrush"];
 
     public DashboardPage()
@@ -69,39 +61,17 @@ public partial class DashboardPage : INotifyPropertyChanged
 
     private void LeigodCoreModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(LeigodCoreModel.MatchedGameProcess))
-        {
-            MatchGameProcessToIcon();
-
-            this.OnPropertyChanged(nameof(GameImageIcon));
-        }
-
         if (e.PropertyName == nameof(LeigodCoreModel.PauseStatusId))
         {
             this.OnPropertyChanged(nameof(PauseStatusTextBrush));
         }
-    }
 
-    private void MatchGameProcessToIcon()
-    {
-        var str = LeigodCoreModel.MatchedGameProcess;
-
-        if (str?.Split('\n').LastOrDefault() is string { Length: > 0 } processPath)
+        if (e.PropertyName == nameof(LeigodCoreModel.MatchedGameProcess))
         {
-            using var icon = Icon.ExtractAssociatedIcon(processPath);
-            if (icon == null) return;
-            var source = Imaging.CreateBitmapSourceFromHIcon(
-                icon.Handle,
-                Int32Rect.Empty,
-                BitmapSizeOptions.FromEmptyOptions());
-            GameImageIcon = source;
-        }
-        else
-        {
-            if (GameImageIcon != null)
-                GameImageIcon = null;
+            this.OnPropertyChanged(nameof(GameImageIcon));
         }
     }
+
 
     private async Task PollLoopAsync(CancellationToken token)
     {

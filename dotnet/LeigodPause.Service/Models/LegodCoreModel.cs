@@ -21,17 +21,25 @@ public partial class LeigodCoreModel : ObservableObject
     [ObservableProperty] private string? token;
     [ObservableProperty] private string? _userName;
     [ObservableProperty] private string? _pauseStatus;
-    [ObservableProperty] private string? _matchedGameProcess;
+
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsMatchedGameProcess))]
+    private string? _matchedGameProcess;
+
+    public bool IsMatchedGameProcess => !string.IsNullOrEmpty(MatchedGameProcess);
+
     private Process? gameProcess;
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsNotPaused))]
     private int? _pauseStatusId;
 
+    public bool IsNotPaused => PauseStatusId == 0;
+
+
     [ObservableProperty] private JsonObject? _userInfoJson;
 
     public ObservableCollection<string> GameListSource { get; }
 
-    public bool IsNotPaused => PauseStatusId == 0;
+
     public const string Pause_url = "https://webapi.leigod.com/api/user/pause";
     public const string Info_url = "https://webapi.leigod.com/api/user/info";
 
@@ -189,12 +197,19 @@ public partial class LeigodCoreModel : ObservableObject
 
         try
         {
-            if (gameProcess is { HasExited: false })
+            try
             {
-                if (MatchedGameProcess?.Equals(Path.GetFileNameWithoutExtension(gameProcess.ProcessName)) == true)
+                if (gameProcess is { HasExited: false })
                 {
-                    return MatchedGameProcess;
+                    if (MatchedGameProcess?.Equals(Path.GetFileNameWithoutExtension(gameProcess.ProcessName)) == true)
+                    {
+                        return MatchedGameProcess;
+                    }
                 }
+            }
+            catch
+            {
+                //
             }
 
             gameProcess?.Dispose();
@@ -249,7 +264,7 @@ public partial class LeigodCoreModel : ObservableObject
                         }
 
                         gameProcess = processesByName[0];
-                        MatchedGameProcess = gameMsg;
+                        _ = InvokeOnUi(() => MatchedGameProcess = gameMsg);
                     }
 
                     return gameMsg;
@@ -267,7 +282,7 @@ public partial class LeigodCoreModel : ObservableObject
 
             lock (_stateLock)
             {
-                MatchedGameProcess = string.Empty;
+                _ = InvokeOnUi(() => MatchedGameProcess = string.Empty);
             }
 
             return string.Empty;
