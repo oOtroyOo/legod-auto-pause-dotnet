@@ -17,12 +17,14 @@ public partial class MainView
     public MainView()
     {
         InitializeComponent();
-
-        Loaded += (_, _) => RootNavigation.Navigate(typeof(DashboardPage));
-
         UiApplication.Current.MainWindow = this;
         logger.LogInformation("games: {games}", configFile.GetValue<string>("games"));
         this.ApplyTheme();
+    }
+
+    private void OnRootNavigationLoaded(object sender, RoutedEventArgs e)
+    {
+        RootNavigation.Navigate(typeof(DashboardPage));
     }
 
     private void MainView_OnClosing(object sender, CancelEventArgs e)

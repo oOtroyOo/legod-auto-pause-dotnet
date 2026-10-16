@@ -40,7 +40,8 @@
                            PaneDisplayMode="LeftMinimal"
                            IsPaneOpen="False"
                            IsPaneToggleVisible="False"
-                           IsBackButtonVisible="Collapsed">
+                           IsBackButtonVisible="Collapsed"
+                           Loaded="OnRootNavigationLoaded">
             <!-- <ui:NavigationView.AutoSuggestBox> -->
             <!--     <ui:AutoSuggestBox x:Name="AutoSuggestBox" PlaceholderText="Search"> -->
             <!--         <ui:AutoSuggestBox.Icon> -->
