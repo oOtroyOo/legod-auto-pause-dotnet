@@ -54,6 +54,6 @@
         </Content>
     </ItemGroup>
     <Target Name="StopPauseService" BeforeTargets="Build" Condition="'$(DisableServiceStop)' != 'true'">
-        <Exec Command="powershell -Command &quot;Start-Process sc -ArgumentList 'stop LegodPauseService' -Verb RunAs &quot;"/>
+        <Exec Command="powershell -Command &quot;Start-Process sc -ArgumentList 'stop LeigodPauseService' -Verb RunAs &quot;"/>
     </Target>
 </Project>
