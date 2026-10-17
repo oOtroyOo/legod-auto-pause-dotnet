@@ -10,7 +10,7 @@ public partial class MainViewCommand : ObservableObject
     private void MenuItemCloseView()
     {
         // 命令执行时 MainView 单例必然已构造完成，避免构造期形成循环依赖。
-        App.Host.Services.GetRequiredService<MainView>().MenuExitApplication();
+        _ = App.Host.Services.GetRequiredService<MainView>().ExitApplicationAsync();
     }
 
     [RelayCommand]

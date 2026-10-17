@@ -2,7 +2,9 @@ using System.Runtime.CompilerServices;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using LeigodPause.Models;
+using Wpf.Ui.Controls;
 using Wpf.Ui.Tray.Controls;
+using MessageBoxResult = Wpf.Ui.Controls.MessageBoxResult;
 
 namespace LeigodPause.Views;
 
@@ -30,6 +32,9 @@ public partial class MainView : INotifyPropertyChanged
 
     // 为 true 时不再拦截关闭，用于托盘菜单的“退出/暂停并退出”真正结束进程。
     private bool _forceExit;
+
+    // DashboardPage 注册的退出清理回调（如 WebView 缓存清理）；仅在确认退出时执行。
+    private Func<Task>? _exitCleanup;
 
     // 托盘右键菜单项（保留 ItemsSource 以便后续扩展：新增项只需加一个带 Tag 的 MenuItem）。
 
@@ -87,6 +92,52 @@ public partial class MainView : INotifyPropertyChanged
 
         // 点关闭按钮：隐藏窗口并驻留托盘，不退出进程。
         e.Cancel = true;
+        _ = ClosingConfirm();
+    }
+
+
+    private void TitleBar_OnCloseClicked(TitleBar sender, RoutedEventArgs args)
+    {
+        // args.Handled = true;
+        // CustomClosingMethod();
+    }
+
+    private async Task ClosingConfirm()
+    {
+        var messageBox = new MessageBox
+        {
+            Content = $"可关闭窗口最小化到托盘，Windows服务仍可继续运行",
+            Title = "确认退出",
+            // ----
+            IsPrimaryButtonEnabled = LeigodCoreModel.IsNotPaused,
+            PrimaryButtonText = "暂停并退出前端",
+            PrimaryButtonAppearance = ControlAppearance.Caution,
+            PrimaryButtonIcon = new SymbolIcon(SymbolRegular.PauseOff20) { FontSize = 20 },
+            // ---- 
+            SecondaryButtonText = "退出前端",
+            SecondaryButtonAppearance = ControlAppearance.Success,
+            SecondaryButtonIcon = new SymbolIcon(SymbolRegular.SignOut20) { FontSize = 20 },
+            // ---- 
+            CloseButtonText = "最小化到托盘",
+            CloseButtonIcon = new SymbolIcon(SymbolRegular.PictureInPicture20) { FontSize = 20 },
+            CloseButtonAppearance = ControlAppearance.Primary,
+            // ---- 
+            Width = 450,
+        };
+        var diag = await messageBox.ShowDialogAsync();
+        switch (diag)
+        {
+            case MessageBoxResult.None:
+                break;
+            case MessageBoxResult.Primary:
+                await LeigodCoreModel.SendPauseState();
+                await ExitApplicationAsync();
+                return;
+            case MessageBoxResult.Secondary:
+                await ExitApplicationAsync();
+                return;
+        }
+
         // 同时隐藏任务栏按钮，避免隐藏后任务栏残留失效条目。
         ShowInTaskbar = false;
         Hide();
@@ -121,7 +172,7 @@ public partial class MainView : INotifyPropertyChanged
             if (faildTcs.Task.IsCompleted && faildTcs.Task.Result)
                 return;
 
-            MenuExitApplication();
+            await ExitApplicationAsync();
         }
         catch (Exception ex)
         {
@@ -129,10 +180,34 @@ public partial class MainView : INotifyPropertyChanged
         }
     }
 
-    public void MenuExitApplication()
+    /// <summary>
+    /// DashboardPage 注册退出清理回调（如 WebView 缓存清理）。仅在确认退出时调用。
+    /// </summary>
+    public void RegisterExitCleanup(Func<Task> cleanup) => _exitCleanup = cleanup;
+
+    private async Task RunExitCleanupAsync()
+    {
+        if (_exitCleanup != null)
+        {
+            try
+            {
+                await _exitCleanup();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "退出清理失败");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 退出应用：置强制退出标志 → 执行退出清理（WebView 缓存等）→ 关闭窗口。
+    /// 确认框的“退出/暂停并退出”与托盘菜单“退出”都走这里，保证先清缓存再退出。
+    /// </summary>
+    public async Task ExitApplicationAsync()
     {
         _forceExit = true;
-        TrayIcon.Dispose();
+        await RunExitCleanupAsync();
         Close();
     }
 

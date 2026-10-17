@@ -43,9 +43,13 @@ public partial class DashboardPage : INotifyPropertyChanged
         // 就近遮蔽全局/主窗口的主题画刷，导致设置页切换主题时本页文字颜色不更新。
         // 文字颜色由 Page 上的 {DynamicResource TextFillColorPrimaryBrush} 提供，随主题动态刷新。
 
+        // 把“退出清理（含 WebView 缓存）”注册给主窗口，由主窗口在『确认退出』后才调用；
+        // 最小化到托盘不触发，避免误清缓存（原先 AppMainWindowOnClosing 每次关闭都清，是冲突根源）。
         var currentApp = App.CurrentApp;
-        var appMainWindow = currentApp.MainWindow;
-        appMainWindow.Closing += AppMainWindowOnClosing;
+        if (currentApp.MainWindow is MainView mainView)
+        {
+            mainView.RegisterExitCleanup(CleanupForExitAsync);
+        }
     }
 
     private CancellationTokenSource? _pollCts;
@@ -248,30 +252,17 @@ public partial class DashboardPage : INotifyPropertyChanged
         }
     }
 
-    private bool _isCleaning;
-
-    private async void AppMainWindowOnClosing(object sender, CancelEventArgs e)
+    /// <summary>
+    /// 仅在主窗口确认退出时由 MainView 调用：取消本页轮询、注销事件，并清理 WebView 缓存。
+    /// 最小化到托盘不调用，因此不会误清缓存。
+    /// </summary>
+    private async Task CleanupForExitAsync()
     {
         _pollCts?.Cancel();
         LeigodCoreModel.PropertyChanged -= LeigodCoreModelOnPropertyChanged;
-        var appWindow = ((Window)sender);
-        if (WebView?.IsInitialized == true)
+        if (WebView?.IsInitialized == true && WebView.CoreWebView2 != null)
         {
-            if (!_isCleaning)
-            {
-                e.Cancel = true;
-                _isCleaning = true;
-                appWindow.ShowInTaskbar = false;
-                appWindow.Hide();
-                if (WebView.CoreWebView2 != null)
-                {
-                    await ClearCache();
-                }
-
-                // 清理完成，关闭窗口
-
-                appWindow.Close();
-            }
+            await ClearCache();
         }
     }
 

@@ -89,7 +89,7 @@
             </ui:NavigationView.FooterMenuItems>
         </ui:NavigationView>
 
-        <ui:TitleBar Title="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" Grid.Row="0" />
+        <ui:TitleBar Title="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" Grid.Row="0" CloseClicked="TitleBar_OnCloseClicked" />
 
         <tray:NotifyIcon
             Grid.Row="0"
