@@ -55,7 +55,7 @@
 
 
     <ItemGroup>
-        <Content Include="$(SolutionDir)\config.ini">
+        <Content Include="$(ProjectDir)..\config.ini">
             <Link>config.ini</Link>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

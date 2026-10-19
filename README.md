@@ -134,12 +134,9 @@
 ```ini
 [config]
 
-# 雷神路径（预留/兼容字段，当前版本通过官方 Web API 操作，无需启动 leigod.exe）
-path = "C:\Program Files (x86)\LeiGod_Acc\leigod.exe"
-
 # 游戏名称（游戏程序在任务管理器中的名称，逗号分隔，可不含 .exe 后缀）
 # 支持在软件内「游戏」页面动态增删
-games = dontstarve_steam_x64,GTA5,Overwatch,notepad
+games = dontstarve_steam_x64,GTA5
 
 # 允许游戏关闭的时间（在此时间内切换游戏不会暂停加速器）单位：秒
 looptime = 30
@@ -147,15 +144,14 @@ looptime = 30
 # 检测时间，多少秒检测一次程序
 update = 1
 
-# token，优先度最高
-# 不填则未登录，需在软件内通过 WebView 登录后点击「检查 Token」自动写入
-# 注意：token 会过期，需要时常重新登录获取
+# token，优先度大于密码
+# 不填会选择用户密码验证，如果怕泄露密码可以自己去官网获取 token
+# 注意：token 会过期，需要时常手动获取（WebView 登录后也会自动写入）
 account_token = 
 ```
 
 | 配置项 | 说明 | 是否必需 |
 | --- | --- | --- |
-| `path` | 雷神客户端路径（兼容预留字段，当前版本未实际使用） | 否 |
 | `games` | 监控的游戏进程名，逗号分隔；进程退出后触发自动暂停逻辑 | 是（至少一个） |
 | `looptime` | 游戏全部退出后的「宽限时间」（秒），超时仍未开新游戏则自动暂停 | 是 |
 | `update` | 后端服务轮询间隔（秒），最小为 1 | 是 |
