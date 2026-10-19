@@ -121,7 +121,8 @@
 
 ## 六、配置文件 `config.ini`
 
-配置文件位于程序同级目录 `config.ini`，用记事本即可编辑。配置详情见 [config.ini](./config.ini)
+配置文件位于仓库内的 `dotnet/config.ini`（仓库中的默认模板）。运行时程序同级目录也会包含
+一个 `config.ini` 用于实际运行，直接编辑运行目录下的 `config.ini` 即可生效。仓库模板见 [dotnet/config.ini](./dotnet/config.ini)
 
 ---
 
