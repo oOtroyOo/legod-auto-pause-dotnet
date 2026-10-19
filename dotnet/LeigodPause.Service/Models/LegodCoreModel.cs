@@ -18,7 +18,12 @@ public partial class LeigodCoreModel : ObservableObject
     // 保护跨线程读写的状态字段（Service 端 Worker 线程 vs IPC 线程）。
     private readonly object _stateLock = new();
 
-    [ObservableProperty] private string? token;
+    public string? Token
+    {
+        get => configFile?.GetValue<string>("account_token") ?? string.Empty;
+        set => configFile?.SetValue("account_token", value);
+    }
+
     [ObservableProperty] private string? _userName;
     [ObservableProperty] private string? _pauseStatus;
 
@@ -44,7 +49,7 @@ public partial class LeigodCoreModel : ObservableObject
     public const string Info_url = "https://webapi.leigod.com/api/user/info";
 
     public DateTimeOffset LastRequestInfoTime { get; private set; }
-    public DateTimeOffset MachedGameProcessTime { get; private set; }
+    public DateTimeOffset MatchedGameProcessExitTime { get; private set; }
 
 
     private TimeSpan _requestInfoDelay = TimeSpan.FromSeconds(5);
@@ -57,22 +62,12 @@ public partial class LeigodCoreModel : ObservableObject
         this.httpClientFactory = httpClientFactory;
         this.logger = logger;
         this.configFile = configFile;
-        this.token = configFile.GetValue<string>("account_token");
         GameListSource = new ObservableCollection<string>(configFile.GetValue<string>("games")?.Split(',') ?? []);
         GameListSource.CollectionChanged += (_, _) => { configFile.SetValue("games", string.Join(",", GameListSource)); };
     }
 
     public bool RequestInfoTimeout => DateTimeOffset.Now - LastRequestInfoTime > _requestInfoDelay;
 
-
-    partial void OnTokenChanged(string? oldValue, string? newValue)
-    {
-        configFile.SetValue("account_token", newValue);
-        if (string.IsNullOrEmpty(newValue))
-        {
-            ApplyFields(null);
-        }
-    }
 
     public async Task RequestUserInfo(Func<int, string?, Task>? onError = null)
     {
@@ -170,7 +165,8 @@ public partial class LeigodCoreModel : ObservableObject
                 }
                 else
                 {
-                    MachedGameProcessTime = default;
+                    // 暂停成功执行后清除退出计时，避免重复触发；下次游戏退出会重新计时
+                    MatchedGameProcessExitTime = default;
                 }
             }
 
@@ -203,6 +199,8 @@ public partial class LeigodCoreModel : ObservableObject
                 {
                     if (MatchedGameProcess?.Equals(Path.GetFileNameWithoutExtension(gameProcess.ProcessName)) == true)
                     {
+                        // 游戏仍在运行，尚未退出，清除退出时间
+                        MatchedGameProcessExitTime = default;
                         return MatchedGameProcess;
                     }
                 }
@@ -258,11 +256,8 @@ public partial class LeigodCoreModel : ObservableObject
 
                     lock (_stateLock)
                     {
-                        if (IsNotPaused)
-                        {
-                            MachedGameProcessTime = DateTimeOffset.Now;
-                        }
-
+                        // 重新匹配到游戏，清除之前的退出时间
+                        MatchedGameProcessExitTime = default;
                         gameProcess = processesByName[0];
                         _ = InvokeOnUi(() => MatchedGameProcess = gameMsg);
                     }
@@ -282,6 +277,13 @@ public partial class LeigodCoreModel : ObservableObject
 
             lock (_stateLock)
             {
+                // 之前有匹配游戏，现在扫描为空（游戏已退出）：首次进入该状态时记录退出时间，
+                // 作为 looptime 宽限计时的起点（避免游戏运行很久后一关闭就立刻暂停）。
+                if (MatchedGameProcessExitTime == default && !string.IsNullOrEmpty(MatchedGameProcess))
+                {
+                    MatchedGameProcessExitTime = DateTimeOffset.Now;
+                }
+
                 _ = InvokeOnUi(() => MatchedGameProcess = string.Empty);
             }
 

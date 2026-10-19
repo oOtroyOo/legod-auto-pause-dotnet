@@ -23,13 +23,20 @@ public class ConfigFile(ILogger<ConfigFile> logger)
 
     private IniData Load()
     {
-        _parser.Parser.Configuration.CommentString = "#";
-        var fileInfo = new FileInfo(FilePath);
-        logger.Log(LogLevel.Information, "Config file path: {FilePath} Exsist{fileInfo.Exists}", FilePath, fileInfo.Exists);
-        if (fileInfo.Exists)
+        try
         {
-            _lastModifyDate = fileInfo.LastWriteTime;
-            return _parser.ReadFile(FilePath, Encoding.UTF8);
+            _parser.Parser.Configuration.CommentString = "#";
+            var fileInfo = new FileInfo(FilePath);
+            logger.Log(LogLevel.Information, "Config file path: {FilePath} Exsist{fileInfo.Exists}", FilePath, fileInfo.Exists);
+            if (fileInfo.Exists)
+            {
+                _lastModifyDate = fileInfo.LastWriteTime;
+                return _parser.ReadFile(FilePath, Encoding.UTF8);
+            }
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "配置文件读取失败");
         }
 
         return new IniData();

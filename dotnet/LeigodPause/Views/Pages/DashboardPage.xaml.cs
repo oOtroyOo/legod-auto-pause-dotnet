@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
@@ -233,8 +234,12 @@ public partial class DashboardPage : INotifyPropertyChanged
     {
         if (!string.IsNullOrEmpty(LeigodCoreModel.Token))
         {
+            var body = new JsonObject()
+            {
+                { "account_token", LeigodCoreModel.Token }
+            };
             string command = $$"""
-                               localStorage.setItem("account_token",JSON.stringify({"account_token":"{{LeigodCoreModel.Token}}"}))
+                               localStorage.setItem("account_token",'{{body.ToJsonString(new JsonSerializerOptions(JsonSerializerDefaults.Web))}}'))
                                """.Trim();
             var result = await WebView.ExecuteScriptAsync(command);
             logger.LogInformation("WriteTokenResult: {result}", result);
@@ -344,8 +349,9 @@ public partial class DashboardPage : INotifyPropertyChanged
     {
         try
         {
-            // var result = (await WebView.ExecuteScriptAsync("localStorage.getItem('account_token')"))?.Trim('"');
-            var token = (await WebView.ExecuteScriptAsync("JSON.parse(localStorage.getItem('account_token')).account_token"))?.Trim('"');
+            var result = Regex.Unescape(await WebView.ExecuteScriptAsync("localStorage.getItem('account_token')")).Trim('"');
+            var objJson = JsonNode.Parse(result) as JsonObject;
+            var token = objJson?["account_token"]?.GetValue<string>().Trim();
             if (!string.IsNullOrEmpty(token) && token != "null")
             {
                 await Dispatcher.InvokeAsync(async () =>

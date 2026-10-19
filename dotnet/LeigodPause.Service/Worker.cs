@@ -131,11 +131,12 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
             // 服务端主动下发检测结果给客户端（无回执，允许数据丢弃）
             await ipcServer.PushFindGameProcessAsync(matched);
 
-            if (string.IsNullOrEmpty(matched) && leigodCoreModel.MachedGameProcessTime != default)
+            if (string.IsNullOrEmpty(matched) && leigodCoreModel.MatchedGameProcessExitTime != default)
             {
                 var loopTime = configFile.GetValue<float>("looptime");
                 if (loopTime < 1) loopTime = 1;
-                if (DateTimeOffset.Now - leigodCoreModel.MachedGameProcessTime > TimeSpan.FromSeconds(loopTime))
+                // 以游戏退出时间（MatchedGameProcessExitTime）为起点计时，给 looptime 秒宽限
+                if (DateTimeOffset.Now - leigodCoreModel.MatchedGameProcessExitTime > TimeSpan.FromSeconds(loopTime))
                 {
                     await SendPauseState();
                     await RequestUserInfo();

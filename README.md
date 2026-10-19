@@ -12,13 +12,6 @@
 <!-- 3) GitHub Actions 构建状态徽章（需先在本仓库添加 .github/workflows/build.yml 等工作流文件） -->
 [![Build](https://github.com/oOtroyOo/legod-auto-pause-dotnet/actions/workflows/build.yml/badge.svg)](https://github.com/oOtroyOo/legod-auto-pause-dotnet/actions/workflows/build.yml)
 
-> ⚠️ 注：仓库地址已确定为 `oOtroyOo/legod-auto-pause-dotnet`。
-> 本项目**目前尚未发布任何 Release 版本**，且仓库内**尚未添加 GitHub Actions 工作流文件**
-> （`.github/workflows/build.yml`），因此上述 Release / 下载量 / 构建状态徽章暂为预留文本，
-> 待首次发布 Release 并配置好 Actions 工作流后即自动生效。
-
----
-
 ## 一、项目简介
 
 本工具用于**自动监控雷神加速器（Leigod）的加速状态与游戏进程**，在游戏退出后自动暂停加速，
@@ -39,10 +32,9 @@
 
 1. **下载并解压**
    前往 [Releases 页面](https://github.com/oOtroyOo/legod-auto-pause-dotnet/releases) 下载最新版压缩包
-   （当前尚未发布 Release，可先用 `publish.ps1` 或 `dotnet publish` 自行构建），解压到任意目录。
-   目录中应包含 `LeigodPause.exe`、`LeigodPause.Service.exe`、`config.ini`、`WebView2Loader.dll` 等。
+   （若当前尚未发布 Release，可先用 `publish.ps1` 或 `dotnet publish` 自行构建）
 
-2. **安装为 Windows 服务（推荐，需管理员权限）**
+2. **安装为 Windows 服务（推荐）**
    - 方式 A（图形界面）：双击运行 `LeigodPause.exe` → 「仪表盘」页点击 **「安装服务」** → 按 UAC 提示授权。
    - 方式 B（命令行）：以管理员身份执行 `LeigodPause.Service.exe --install`（或 `-i`）。
    

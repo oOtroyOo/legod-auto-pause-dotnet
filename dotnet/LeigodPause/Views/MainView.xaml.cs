@@ -33,6 +33,9 @@ public partial class MainView : INotifyPropertyChanged
     // 为 true 时不再拦截关闭，用于托盘菜单的“退出/暂停并退出”真正结束进程。
     private bool _forceExit;
 
+    private float _updateTime;
+
+
     // DashboardPage 注册的退出清理回调（如 WebView 缓存清理）；仅在确认退出时执行。
     private Func<Task>? _exitCleanup;
 
@@ -45,6 +48,8 @@ public partial class MainView : INotifyPropertyChanged
         TrayIcon.Menu.DataContext = this;
         UiApplication.Current.MainWindow = this;
         logger.LogInformation("games: {games}", configFile.GetValue<string>("games"));
+        _updateTime = configFile.GetValue<float>("update");
+
         LeigodCoreModel.PropertyChanged += LeigodCoreModelOnPropertyChanged;
         this.ApplyTheme();
     }
@@ -266,8 +271,11 @@ public partial class MainView : INotifyPropertyChanged
 
     private async Task UpdateTimer()
     {
-        if (DateTimeOffset.Now - lastInfoTime > TimeSpan.FromSeconds(5))
+        if (DateTimeOffset.Now - lastInfoTime > TimeSpan.FromSeconds(_updateTime))
         {
+            _updateTime = configFile.GetValue<float>("update");
+            if (_updateTime < 1) _updateTime = 1;
+
 #if DEBUG
             // await _ipcClient.SendAsync(new IpcEnvelope() { Command = ServiceCommand.Ping })
             //     .ContinueWith(t =>
@@ -319,7 +327,7 @@ public partial class MainView : INotifyPropertyChanged
         {
             var loopTime = configFile.GetValue<float>("loop");
             if (loopTime < 1) loopTime = 1;
-            if (DateTimeOffset.Now - LeigodCoreModel.MachedGameProcessTime > TimeSpan.FromSeconds(loopTime))
+            if (DateTimeOffset.Now - LeigodCoreModel.MatchedGameProcessExitTime > TimeSpan.FromSeconds(loopTime))
             {
                 await LeigodCoreModel.FindGameProcess().ConfigureAwait(false);
             }
