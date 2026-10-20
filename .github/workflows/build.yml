@@ -4,9 +4,12 @@ on:
   push:
     branches: [ main, dotnet ]
     tags: [ 'v*' ]          # 推送版本标签（如 v1.0.0）时触发，并发布 Release
-  pull_request:
-    branches: [ main, dotnet ]
-  workflow_dispatch:
+    # 仅当两个项目目录有变更时才触发构建。
+    # 注意：GitHub 不对 tag 推送评估 paths，所以打标签发布 Release 不受影响。
+    paths:
+      - 'dotnet/LeigodPause/**'
+      - 'dotnet/LeigodPause.Service/**'
+  workflow_dispatch:        # 手动触发不受 paths 限制
 
 jobs:
   build:
