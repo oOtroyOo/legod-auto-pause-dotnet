@@ -3,6 +3,7 @@ name: Build
 on:
   push:
     branches: [ main, dotnet ]
+    tags: [ 'v*' ]          # 推送版本标签（如 v1.0.0）时触发，并发布 Release
   pull_request:
     branches: [ main, dotnet ]
   workflow_dispatch:
@@ -36,3 +37,32 @@ jobs:
           path: dotnet/publish
           if-no-files-found: error
           retention-days: 30
+
+  # 仅当推送标签（refs/tags/）时运行：把构建产物打包并发布为 GitHub Release
+  release:
+    name: Release (tag)
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write        # 创建 Release 需要写仓库内容权限
+
+    steps:
+      - name: Download publish artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: LeigodPause-publish
+          path: LeigodPause-publish
+
+      - name: Zip publish artifact
+        shell: pwsh
+        run: Compress-Archive -Path LeigodPause-publish/* -DestinationPath LeigodPause-publish.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          files: LeigodPause-publish.zip
+          generate_release_notes: true
