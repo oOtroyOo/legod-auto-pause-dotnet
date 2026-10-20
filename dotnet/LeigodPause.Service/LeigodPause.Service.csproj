@@ -8,7 +8,7 @@
 
         <!-- 与 WPF 共用输出目录：调试时服务 exe 与前端 exe 落在同一文件夹，
              便于 Service.StartMainApp 用 AppContext.BaseDirectory 直接拉起前端，也方便联合部署。 -->
-        <OutputPath>..\LeigodPause\bin\$(Configuration)\$(TargetFramework)\win-x64\</OutputPath>
+<!--        <OutputPath>..\LeigodPause\bin\$(Configuration)\$(TargetFramework)\win-x64\</OutputPath>-->
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 

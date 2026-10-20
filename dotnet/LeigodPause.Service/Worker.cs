@@ -13,10 +13,13 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
         await ipcServer.Stop();
         try
         {
-            var hostLifetime = Program.AppHost.Services.GetRequiredService<IHostLifetime>();
-            if (hostLifetime is CustomServiceLifetime customLifetime)
+            if (Program.AppHost != null)
             {
-                customLifetime.OnShutdownEvents -= OnHostLifetimeShutdown;
+                var hostLifetime = Program.AppHost.Services.GetRequiredService<IHostLifetime>();
+                if (hostLifetime is CustomServiceLifetime customLifetime)
+                {
+                    customLifetime.OnShutdownEvents -= OnHostLifetimeShutdown;
+                }
             }
         }
         catch (Exception e)
@@ -36,11 +39,14 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
         SystemEvents.SessionEnding += OnSessionEnding;
         try
         {
-            var hostLifetime = Program.AppHost.Services.GetRequiredService<IHostLifetime>();
-            logger.LogInformation("IHostLifetime is " + hostLifetime.GetType().FullName);
-            if (hostLifetime is CustomServiceLifetime customLifetime)
+            if (Program.AppHost != null)
             {
-                customLifetime.OnShutdownEvents += OnHostLifetimeShutdown;
+                var hostLifetime = Program.AppHost.Services.GetRequiredService<IHostLifetime>();
+                logger.LogInformation("IHostLifetime is " + hostLifetime.GetType().FullName);
+                if (hostLifetime is CustomServiceLifetime customLifetime)
+                {
+                    customLifetime.OnShutdownEvents += OnHostLifetimeShutdown;
+                }
             }
         }
         catch (Exception e)
@@ -263,10 +269,10 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
             }
 
             const uint tokenPrivs = NativeMethods.TOKEN_QUERY
-                | NativeMethods.TOKEN_DUPLICATE
-                | NativeMethods.TOKEN_ASSIGN_PRIMARY
-                | NativeMethods.TOKEN_ADJUST_DEFAULT
-                | NativeMethods.TOKEN_ADJUST_SESSIONID;
+                                    | NativeMethods.TOKEN_DUPLICATE
+                                    | NativeMethods.TOKEN_ASSIGN_PRIMARY
+                                    | NativeMethods.TOKEN_ADJUST_DEFAULT
+                                    | NativeMethods.TOKEN_ADJUST_SESSIONID;
 
             if (!NativeMethods.DuplicateTokenEx(
                     userToken, tokenPrivs, IntPtr.Zero,

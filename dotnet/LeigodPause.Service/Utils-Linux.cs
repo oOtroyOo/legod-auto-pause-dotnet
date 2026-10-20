@@ -84,7 +84,6 @@ public partial class Utils
         catch (Exception ex)
         {
             Console.WriteLine("Linux 服务安装失败: " + ex.Message);
-            return -1;
         }
 
         return -1;
@@ -152,7 +151,7 @@ public partial class Utils
             var output = process.StandardOutput.ReadToEnd();
             var error = process.StandardError.ReadToEnd();
             Console.WriteLine($"code={process.ExitCode} out={output} err={error}");
-            
+
             // systemctl is-active 返回 0 表示服务正在运行
             return process.ExitCode == 0 && output?.Trim() == "active";
         }

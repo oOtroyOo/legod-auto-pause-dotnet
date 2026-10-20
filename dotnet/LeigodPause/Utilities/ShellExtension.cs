@@ -18,7 +18,7 @@ public class ShellExtension
     [DllImport("shell32.dll")]
     public static extern IntPtr ExtractIcon(IntPtr hInst, string lpszExeFileName, int nIconIndex);
 
-    public static Icon LoadShellIcon(string dllPath, int iconIndex)
+    public static Icon? LoadShellIcon(string dllPath, int iconIndex)
     {
         IntPtr hIcon = ExtractIcon(IntPtr.Zero, dllPath, iconIndex);
         if (hIcon != IntPtr.Zero)

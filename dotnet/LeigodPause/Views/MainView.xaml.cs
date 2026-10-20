@@ -19,10 +19,10 @@ public partial class MainView : INotifyPropertyChanged
     public static readonly DependencyProperty GameImageIconProperty = DependencyProperty.Register(
         nameof(GameImageIcon), typeof(ImageSource), typeof(MainView), new PropertyMetadata(default(ImageSource)));
 
-    public ImageSource GameImageIcon
+    public ImageSource? GameImageIcon
     {
-        get { return (ImageSource)GetValue(GameImageIconProperty); }
-        set { SetValue(GameImageIconProperty, value); }
+        get => (ImageSource)GetValue(GameImageIconProperty);
+        set => SetValue(GameImageIconProperty, value);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -45,7 +45,7 @@ public partial class MainView : INotifyPropertyChanged
     {
         InitializeComponent();
         // 托盘菜单不在常规视觉树中，不会继承 MainView 的 DataContext，需手动指定绑定源
-        TrayIcon.Menu.DataContext = this;
+        TrayIcon.Menu?.DataContext = this;
         UiApplication.Current.MainWindow = this;
         logger.LogInformation("games: {games}", configFile.GetValue<string>("games"));
         _updateTime = configFile.GetValue<float>("update");

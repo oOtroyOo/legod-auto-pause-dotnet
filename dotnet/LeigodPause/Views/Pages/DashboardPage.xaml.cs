@@ -145,7 +145,7 @@ public partial class DashboardPage : INotifyPropertyChanged
                 CreateNoWindow = true,
             });
             process?.WaitForExit();
-            int exitCode = process.ExitCode;
+            var exitCode = process?.ExitCode;
             if (exitCode == 0)
             {
                 CancellationTokenSource tokenSource = new CancellationTokenSource();
@@ -167,7 +167,7 @@ public partial class DashboardPage : INotifyPropertyChanged
         });
     }
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
