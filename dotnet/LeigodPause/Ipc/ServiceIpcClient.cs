@@ -12,12 +12,16 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
 
     // 保护共享的 _pipe：Connect / SendAsync(写) / 重建 互斥。
     // 读统一交给接收泵负责，因此泵不参与此锁，读写互不阻塞。
-    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly SemaphoreSlim _sendGate = new(1, 1);
 
+    // 保护“进行中的读”与“重建/Dispose 管道”互斥：异步读进行中 Dispose 管道会触发
+    // 非托管 AccessViolationException（不可被 catch），直接导致进程崩溃。
+    private readonly SemaphoreSlim _readGate = new(1, 1);
+    
     // 构造于 UI 线程，用于把服务端下发的结果切回 UI 线程写绑定属性
     private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
 
-    // 同一时刻最多一个在途请求（SendAsync 已被 _gate 串行化），响应由接收泵回填
+    // 同一时刻最多一个在途请求（SendAsync 已被 _sendGate 串行化），响应由接收泵回填
     private TaskCompletionSource<IpcEnvelope>? _pending;
     private ServiceCommand _pendingCommand;
     private readonly object _pendingLock = new();
@@ -26,13 +30,16 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
     private CancellationTokenSource? _receiveCts;
     private readonly object _receiveLock = new();
 
+
+
     public bool IsConnected => _pipe.IsConnected;
 
     public async Task<IpcEnvelope?> SendAsync(IpcEnvelope command, CancellationToken token = default)
     {
         var tcs = new TaskCompletionSource<IpcEnvelope>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        await _gate.WaitAsync(token).ConfigureAwait(false);
+        await _sendGate.WaitAsync(token).ConfigureAwait(false);
+        bool needRecreate = false;
         try
         {
             if (!_pipe.IsConnected)
@@ -54,16 +61,21 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
             }
             catch (IOException ioEx)
             {
-                // 管道已断开（服务重启/崩溃）：重建实例让 Connect() 下一轮重连，本次丢弃。
+                // 管道已断开（服务重启/崩溃）：标记重建，待释放 _sendGate 后再重建，避免重入死锁。
                 logger.LogWarning(ioEx, "IPC 写入失败，重建管道以便重连");
                 ClearPending(tcs);
-                RecreatePipe();
-                return null;
+                needRecreate = true;
             }
         }
         finally
         {
-            _gate.Release();
+            _sendGate.Release();
+        }
+
+        if (needRecreate)
+        {
+            await RecreatePipeAsync().ConfigureAwait(false);
+            return null;
         }
 
         // 在锁外等待响应，避免阻塞其它调用与接收泵
@@ -101,18 +113,36 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
         }
     }
 
-    private void RecreatePipe()
+    private async Task RecreatePipeAsync()
     {
+        // 与写（_sendGate）和读（_readGate）互斥：确保 Dispose 旧管道时没有进行中的读写，
+        // 否则异步读/写进行中 Dispose 会触发非托管 AccessViolationException（不可捕获）。
+        await _sendGate.WaitAsync().ConfigureAwait(false);
         try
         {
-            _pipe.Dispose();
-        }
-        catch
-        {
-            // 忽略释放异常
-        }
+            await _readGate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                try
+                {
+                    _pipe.Dispose();
+                }
+                catch
+                {
+                    // 忽略释放异常
+                }
 
-        _pipe = new NamedPipeClientStream(".", IpcPipeNames.CommandPipe, PipeDirection.InOut, PipeOptions.Asynchronous);
+                _pipe = new NamedPipeClientStream(".", IpcPipeNames.CommandPipe, PipeDirection.InOut, PipeOptions.Asynchronous);
+            }
+            finally
+            {
+                _readGate.Release();
+            }
+        }
+        finally
+        {
+            _sendGate.Release();
+        }
     }
 
     private void EnsureReceiveLoop()
@@ -137,16 +167,19 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
     {
         while (!token.IsCancellationRequested)
         {
-            // 每轮取最新管道实例，便于断线重连后自动接管新管道
-            var pipe = _pipe;
-            if (pipe is null || !pipe.IsConnected)
-            {
-                await SafeDelay(200, token);
-                continue;
-            }
-
+            // 在 _readGate 内取最新管道实例：与 RecreatePipeAsync 互斥，保证读到的实例
+            // 不会被并发 Dispose，且读进行中重建会被阻塞在 _readGate 之外。
+            // 异步读进行中 Dispose 管道会触发非托管 AccessViolationException（不可被 catch），导致进程崩溃。
+            await _readGate.WaitAsync(token);
             try
             {
+                var pipe = _pipe;
+                if (pipe is null || !pipe.IsConnected)
+                {
+                    await SafeDelay(200, token);
+                    continue;
+                }
+
                 var frame = await protobufMsgEncoder.Decode<IpcEnvelope>(pipe, token).ConfigureAwait(false);
                 HandleIncomingFrame(frame);
             }
@@ -170,6 +203,10 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
             {
                 logger.LogError(e, "IPC 接收失败");
                 await SafeDelay(500, token);
+            }
+            finally
+            {
+                _readGate.Release();
             }
         }
     }
@@ -263,7 +300,7 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
     {
         _receiveCts?.Cancel();
         _pipe?.Dispose();
-        _gate?.Dispose();
+        _sendGate?.Dispose();
     }
 
     public async Task Connect()
@@ -273,8 +310,8 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
         while (true)
         {
             // 1) 仅在（重）连接时短暂持锁，连上后立即释放——否则会在整个连接期内一直
-            //    持有 _gate，导致 SendAsync 永远拿不到锁而被饿死（死锁）。
-            await _gate.WaitAsync().ConfigureAwait(false);
+            //    持有 _sendGate，导致 SendAsync 永远拿不到锁而被饿死（死锁）。
+            await _sendGate.WaitAsync().ConfigureAwait(false);
             try
             {
                 if (!_pipe.IsConnected)
@@ -296,7 +333,7 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
             }
             finally
             {
-                _gate.Release();
+                _sendGate.Release();
             }
 
             // 2) 已连接：不持锁地等待，直到管道断开，让 SendAsync 能正常收发。
@@ -312,16 +349,8 @@ public sealed class ServiceIpcClient(ILogger<ServiceIpcClient> logger, LeigodCor
                 // 连接断开 / 被释放时退出等待，进入重建流程
             }
 
-            // 3) 已断开：持锁重建管道实例，再回到循环重连。
-            await _gate.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                RecreatePipe();
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            // 3) 已断开：重建管道实例（RecreatePipeAsync 内部已与读写互斥），再回到循环重连。
+            await RecreatePipeAsync().ConfigureAwait(false);
         }
     }
 }
