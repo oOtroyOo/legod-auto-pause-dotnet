@@ -1,23 +1,23 @@
-# legod-auto-pause-dotnet
+# leigod-auto-pause-dotnet
 
 雷神加速器 · 时长自动暂停工具（.NET 重写版）
 
-<!-- 仓库地址：github.com/oOtroyOo/legod-auto-pause-dotnet（已确定） -->
+<!-- 仓库地址：github.com/oOtroyOo/leigod-auto-pause-dotnet（已确定） -->
 <!-- 1) GitHub Release 徽章（发布首个 Release 后会自动显示版本号；当前无 Release，先预留） -->
-[![GitHub Release](https://img.shields.io/github/v/release/oOtroyOo/legod-auto-pause-dotnet?include_prereleases&style=flat-square)](https://github.com/oOtroyOo/legod-auto-pause-dotnet/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/oOtroyOo/leigod-auto-pause-dotnet?include_prereleases&style=flat-square)](https://github.com/oOtroyOo/leigod-auto-pause-dotnet/releases)
 
 <!-- 2) 累计下载量徽章（同样待发布后自动统计） -->
-[![GitHub Downloads](https://img.shields.io/github/downloads/oOtroyOo/legod-auto-pause-dotnet/total?style=flat-square)](https://github.com/oOtroyOo/legod-auto-pause-dotnet/releases)
+[![GitHub Downloads](https://img.shields.io/github/downloads/oOtroyOo/leigod-auto-pause-dotnet/total?style=flat-square)](https://github.com/oOtroyOo/leigod-auto-pause-dotnet/releases)
 
 <!-- 3) GitHub Actions 构建状态徽章（需先在本仓库添加 .github/workflows/build.yml 等工作流文件） -->
-[![Build](https://github.com/oOtroyOo/legod-auto-pause-dotnet/actions/workflows/build.yml/badge.svg)](https://github.com/oOtroyOo/legod-auto-pause-dotnet/actions/workflows/build.yml)
+[![Build](https://github.com/oOtroyOo/leigod-auto-pause-dotnet/actions/workflows/build.yml/badge.svg)](https://github.com/oOtroyOo/leigod-auto-pause-dotnet/actions/workflows/build.yml)
 
 ## 一、项目简介
 
 本工具用于**自动监控雷神加速器（Leigod）的加速状态与游戏进程**，在游戏退出后自动暂停加速，
 帮你省下每一分钟加速时长；并在**系统关机 / 注销前**自动暂停，避免忘记暂停而白白浪费时间。
 
-本版本使用 **C# / .NET** 全面重构（Fork 自原 Python 项目 `legod-auto-pause`），核心升级点：
+本版本使用 **C# / .NET** 全面重构（Fork 自原 Python 项目 `leigod-auto-pause`），核心升级点：
 
 - 基于 **.NET Framework 4.8.1** 构建，Windows 10/11 已自带该运行时，**用户无需安装运行时**；
 - **前后端分离**：监控逻辑运行在 **Windows 服务**中，前端托盘 UI 可随时关闭，监控不中断；
@@ -32,7 +32,7 @@
 > 下面是最短上手路径；各步骤的详细说明见后文对应章节。
 
 1. **下载并解压**
-   前往 [Releases 页面](https://github.com/oOtroyOo/legod-auto-pause-dotnet/releases) 下载最新版压缩包
+   前往 [Releases 页面](https://github.com/oOtroyOo/leigod-auto-pause-dotnet/releases) 下载最新版压缩包
    （若当前尚未发布 Release，可先用 `publish.ps1` 或 `dotnet publish` 自行构建）
 
 2. **安装为 Windows 服务（推荐）**
@@ -165,7 +165,7 @@
 ## 十、致谢 / 参考
 
 - 本项目的架构与核心思路 Fork 自原 Python 项目
-  [**`legod-auto-pause`**](https://github.com/6yy66yy/legod-auto-pause)（作者 [@6yy66yy](https://github.com/6yy66yy)），
+  [**`leigod-auto-pause`**](https://github.com/6yy66yy/leigod-auto-pause)（作者 [@6yy66yy](https://github.com/6yy66yy)），
   在此表示感谢。
 - 雷神加速器官方 Web API（`webapi.leigod.com`）仅作技术研究用途调用。
 
