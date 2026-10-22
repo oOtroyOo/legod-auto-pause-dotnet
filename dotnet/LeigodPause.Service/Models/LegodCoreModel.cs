@@ -142,10 +142,10 @@ public partial class LeigodCoreModel : ObservableObject
         {
             try
             {
-                if (!IsNotPaused)
+                if (IsNotPaused)
                     await RequestUserInfo();
 
-                if (!IsNotPaused)
+                if (IsNotPaused)
                 {
                     MatchedGameProcessExitTime = default;
                     return false;
