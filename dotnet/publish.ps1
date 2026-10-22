@@ -1,4 +1,4 @@
-# 是否为 CI 环境（GitHub Actions 等）。
+﻿# 是否为 CI 环境（GitHub Actions 等）。
 $IsCI = $env:GITHUB_ACTIONS -eq 'true'
 
 Set-Location $PSScriptRoot
@@ -21,7 +21,8 @@ if (-not $IsCI) {
 if (Test-Path -Path ./publish) {
     foreach ($child in (Get-ChildItem -Path ./publish)) {
         if ($child.Name -notlike '*.WebView2') {
-            Remove-Item $child -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Host 删除 $child.FullName
+            $child | Remove-Item  -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
 }
