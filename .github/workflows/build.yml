@@ -41,7 +41,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  # 仅当推送标签（refs/tags/）时运行：把构建产物打包并发布为 GitHub Release
+  # 仅当推送标签（refs/tags/）时运行：打包构建产物，用 Copilot 生成中文 Release 说明后发布
   release:
     name: Release (tag)
     needs: build
@@ -50,12 +50,28 @@ jobs:
     timeout-minutes: 30
 
     env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}                          # gh 发布 + Copilot 走内置 token 时的兜底
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}  # 个人仓库：需自备 fine-grained PAT（Copilot Requests 权限）
 
     permissions:
-      contents: write # 创建 Release 需要写仓库内容权限
+      contents: write          # 创建 Release 需要写仓库内容权限
+      copilot-requests: write  # 使用内置 GITHUB_TOKEN 调用 Copilot 时需要
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # 拉全量历史：计算版本差 + gh/copilot 需要 git 上下文
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+
+      - name: Install Copilot CLI
+        continue-on-error: true   # 安装失败也继续，最终回退到原始提交列表
+        run: npm install -g @github/copilot
+
       - name: Download publish artifact
         uses: actions/download-artifact@v4
         with:
@@ -64,8 +80,38 @@ jobs:
 
       - name: Zip publish artifact
         shell: pwsh
-        run: Compress-Archive -Path LeigodPause-publish/* -DestinationPath LeigodPause-${{ github.ref_name }}.zip
+        run: Compress-Archive -Path LeigodPause-publish/* -DestinationPath "LeigodPause-$env:GITHUB_REF_NAME.zip"
+
+      - name: Generate release notes (Copilot)
+        shell: pwsh
+        run: |
+          # 1) 取上一 tag 到当前的提交记录（首次发版无上一 tag 则取全部）
+          $prev = git describe --tags --abbrev=0 HEAD^ 2>$null
+          if ($prev) { $range = "$prev..HEAD" } else { $range = "" }
+          Write-Host "Prev tag: $prev"
+          git log $range --no-merges --max-count=200 --pretty=format:"%h %s" > commits.txt
+          $commits = Get-Content commits.txt -Raw
+
+          if ([string]::IsNullOrWhiteSpace($commits)) {
+            "# Release $env:GITHUB_REF_NAME`n`n（本版本无提交记录）" | Out-File release_notes.md -Encoding utf8
+            exit 0
+          }
+
+          # 2) 调用 Copilot 生成中文 Release 说明（提交记录作为上下文传入，无需 git 工具权限）
+          $header = "你是软件发布助理。以下是本版本（相对上一正式版）的 git 提交记录，每行格式为「短哈希 提交说明」。请生成简体中文《Release 说明》：`n1) 按「✨ 新功能 / 🐛 修复 / 🔧 其他」三类归纳，没有的类省略；`n2) 每条要点简洁、面向用户、可感知；`n3) 不要列出原始哈希，不要编造未提及的内容；`n4) 开头用一两句话概括本版本。`n只输出 Release 说明正文（Markdown），不要任何解释或前后缀。`n`n提交记录：`n"
+          $prompt = $header + $commits
+
+          $env:PATH = "$env:APPDATA\npm;$env:PATH"   # 确保全局安装的 copilot 在 PATH 中
+          copilot -p $prompt -s --no-ask-user > release_notes.md 2>copilot.err
+
+          # 3) 兜底：Copilot 失败（未配 PAT / 限流 / 网络）则用原始提交列表，保证 Release 始终能发布
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path release_notes.md) -or (Get-Item release_notes.md).Length -eq 0) {
+            Write-Warning "Copilot 总结失败，回退到原始提交列表"
+            $bullets = ($commits.Trim() -split "`n" | Where-Object { $_.Trim() } | ForEach-Object { "- $_" }) -join "`n"
+            "# Release $env:GITHUB_REF_NAME`n`n## 提交记录`n`n$bullets" | Out-File release_notes.md -Encoding utf8
+          }
 
       - name: Create GitHub Release
+        shell: pwsh
         run: |
-          gh release create "$env:GITHUB_REF_NAME" --generate-notes --title "$env:GITHUB_REF_NAME"
+          gh release create "$env:GITHUB_REF_NAME" "LeigodPause-$env:GITHUB_REF_NAME.zip" --notes-file release_notes.md --title "$env:GITHUB_REF_NAME"
