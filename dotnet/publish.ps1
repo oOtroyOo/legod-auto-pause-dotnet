@@ -1,10 +1,29 @@
 # 是否为 CI 环境（GitHub Actions 等）。
 $IsCI = $env:GITHUB_ACTIONS -eq 'true'
 
-Remove-Item -Recurse ./publish -ErrorAction SilentlyContinue
+Set-Location $PSScriptRoot
+
 dotnet clean
 if (-not $IsCI) {
     Start-Process sc -ArgumentList 'stop LeigodPauseService' -Verb RunAs -ErrorAction Continue
+
+    # 结束可能占用发布目录文件的进程。
+    foreach ($name in @('LeigodPause', 'LeigodPause.Service')) {
+        $procs = Get-Process -Name $name -ErrorAction Continue
+        if ($procs) {
+            Write-Host "结束进程: $name"
+            $procs | Stop-Process -Force -ErrorAction Continue
+        }
+    }
+}
+
+# 清理发布目录，但保留 ".WebView2"
+if (Test-Path -Path ./publish) {
+    foreach ($child in (Get-ChildItem -Path ./publish)) {
+        if ($child.Name -notlike '*.WebView2') {
+            Remove-Item $child -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 dotnet publish LeigodPause/LeigodPause.csproj -c Release -f net481 -p:PublishLayout=true -p:DisableServiceStop=true -o ./publish

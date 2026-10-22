@@ -90,6 +90,7 @@ public partial class LeigodCoreModel : ObservableObject
                 var postMessage = await httpClient.PostAsync(Info_url, new StringContent(payload)).ConfigureAwait(false);
                 postMessage.EnsureSuccessStatusCode();
                 var jsonStr = await postMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
+                logger.LogInformation("RequestUserInfo jsonStr: {0}", jsonStr);
                 var jsonObject = JsonNode.Parse(jsonStr) as JsonObject;
                 var data = jsonObject?["data"] as JsonObject ?? jsonObject;
                 if (data is { Count: > 0 })
@@ -136,17 +137,24 @@ public partial class LeigodCoreModel : ObservableObject
     /// </summary>
     public async Task<bool> SendPauseState(Func<int, string?, Task>? onError = null)
     {
+        logger.LogInformation("SendPauseState");
         // 在途保护：与刷新/扫进程互不阻塞
         await _pauseInFlight.WaitAsync().ConfigureAwait(false);
         try
         {
             try
             {
-                if (IsNotPaused)
-                    await RequestUserInfo();
-
-                if (IsNotPaused)
+                logger.LogInformation("SendPauseState IsNotPaused 1: {0}", IsNotPaused);
+                if (!IsNotPaused)
                 {
+                    logger.LogInformation("没有暂停状态，请求用户信息");
+                    await RequestUserInfo();
+                }
+
+                logger.LogInformation("SendPauseState IsNotPaused 2: {0}", IsNotPaused);
+                if (!IsNotPaused)
+                {
+                    logger.LogInformation("没有暂停状态，直接return");
                     MatchedGameProcessExitTime = default;
                     return false;
                 }
@@ -164,9 +172,11 @@ public partial class LeigodCoreModel : ObservableObject
                     var httpClient = httpClientFactory.CreateClient(HttpClientExtensions.LeigodClientName);
                     // https://webapi.leigod.com/api/user/pause?os_type=5&account_token=xxxx&region_code=1&src_channel=guanwang&lang=zh_CN
                     string urlQuery = $"{Pause_url}?os_type={4}&account_token={token}&region_code={1}&src_channel=guanwang&lang=zh_CN";
+                    logger.LogInformation("Post : {0}", urlQuery);
                     var postMessage = await httpClient.PostAsync(urlQuery, new StringContent("{}")).ConfigureAwait(false);
                     postMessage.EnsureSuccessStatusCode();
                     var jsonStr = await postMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    logger.LogInformation("PostResult : {0}", jsonStr);
                     var jsonObject = JsonNode.Parse(jsonStr) as JsonObject;
                     var code = jsonObject?["code"]?.GetValue<int>();
                     var msg = jsonObject?["msg"]?.GetValue<string>();
@@ -177,6 +187,7 @@ public partial class LeigodCoreModel : ObservableObject
                     else
                     {
                         // 暂停成功执行后清除退出计时，避免重复触发；下次游戏退出会重新计时
+                        logger.LogInformation("暂停成功执行后清除退出计时");
                         MatchedGameProcessExitTime = default;
                     }
                 }
