@@ -68,6 +68,4 @@ jobs:
 
       - name: Create GitHub Release
         run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --generate-notes \
-            --title "${GITHUB_REF_NAME}"
+          gh release create "$env:GITHUB_REF_NAME" --generate-notes --title "$env:GITHUB_REF_NAME"
