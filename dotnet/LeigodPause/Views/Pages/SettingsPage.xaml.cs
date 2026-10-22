@@ -36,6 +36,11 @@ public partial class SettingsPage
     private string GetAssemblyVersion()
     {
         return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString()
-            ?? string.Empty;
+               ?? string.Empty;
+    }
+
+    private void OnTestButtonClick(object sender, RoutedEventArgs e)
+    {
+        ToastUtility.Show(this.ExampleText.Text,  this.WindowTitle);
     }
 }

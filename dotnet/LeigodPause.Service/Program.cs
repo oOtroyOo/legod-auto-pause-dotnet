@@ -41,9 +41,9 @@ public class Program
             .AddLogging(loggingBuilder =>
             {
                 loggingBuilder.AddConsole();
-#if DEBUG
+// #if DEBUG
                 loggingBuilder.AddProvider(new FileLoggerProvider());
-#endif
+// #endif
             })
             .AddLeigodHttpClient()
             .AddSingleton<LeigodCoreModel>()

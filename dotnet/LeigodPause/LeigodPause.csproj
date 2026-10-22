@@ -17,6 +17,7 @@
 
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
         <PackageReference Include="Microsoft.Web.WebView2"/>
         <PackageReference Include="CommunityToolkit.Mvvm"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>

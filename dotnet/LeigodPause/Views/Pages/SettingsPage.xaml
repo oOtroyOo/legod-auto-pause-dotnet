@@ -44,5 +44,7 @@
             Content="Github"
             NavigateUri="https://github.com/oOtroyOo/legod-auto-pause-dotnet" />
         <TextBlock x:Name="AppVersionTextBlock" Margin="0,12,0,0" />
+        <TextBox Name="ExampleText">11123</TextBox>
+        <Button Content="测试" Click="OnTestButtonClick"></Button>
     </StackPanel>
 </Page>

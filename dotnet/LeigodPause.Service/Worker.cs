@@ -130,23 +130,24 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
             await RequestUserInfo();
         }
 
-        if (leigodCoreModel.IsNotPaused)
+
+        var matched = await leigodCoreModel.FindGameProcess();
+
+        // 服务端主动下发检测结果给客户端（无回执，允许数据丢弃）
+        await ipcServer.PushFindGameProcessAsync(matched);
+
+        if (string.IsNullOrEmpty(matched) && leigodCoreModel.MatchedGameProcessExitTime != default)
         {
-            var matched = await leigodCoreModel.FindGameProcess();
+            var loopTime = configFile.GetValue<float>("looptime");
+            if (loopTime < 1) loopTime = 1;
 
-            // 服务端主动下发检测结果给客户端（无回执，允许数据丢弃）
-            await ipcServer.PushFindGameProcessAsync(matched);
-
-            if (string.IsNullOrEmpty(matched) && leigodCoreModel.MatchedGameProcessExitTime != default)
+            // 以游戏退出时间（MatchedGameProcessExitTime）为起点计时，给 looptime 秒宽限
+            var exitTimeSpan = DateTimeOffset.Now - leigodCoreModel.MatchedGameProcessExitTime;
+            logger.LogInformation("进程关闭延时{0} ", exitTimeSpan);
+            if (exitTimeSpan > TimeSpan.FromSeconds(loopTime))
             {
-                var loopTime = configFile.GetValue<float>("looptime");
-                if (loopTime < 1) loopTime = 1;
-                // 以游戏退出时间（MatchedGameProcessExitTime）为起点计时，给 looptime 秒宽限
-                if (DateTimeOffset.Now - leigodCoreModel.MatchedGameProcessExitTime > TimeSpan.FromSeconds(loopTime))
-                {
-                    await SendPauseState();
-                    await RequestUserInfo();
-                }
+                await SendPauseState();
+                await RequestUserInfo();
             }
         }
     }
@@ -182,43 +183,57 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
         var token = configFile.GetValue<string>("account_token");
         if (token is { Length: > 0 })
         {
-            await leigodCoreModel.SendPauseState((c, m) =>
-            {
-                // leigodCoreModel.Token = null;
-                ipcServer.LastPauseStateError = new IpcEnvelope() { Command = ServiceCommand.PauseState, Code = c, Msg = m };
-                if (c > 0)
+            var sendResult = await leigodCoreModel.SendPauseState((c, m) =>
                 {
-                    if (!ipcServer.HasClient)
-                        StartMainApp();
-                    else
+                    // leigodCoreModel.Token = null;
+                    ipcServer.LastPauseStateError = new IpcEnvelope() { Command = ServiceCommand.PauseState, Code = c, Msg = m };
+                    if (c > 0)
                     {
-                        _ = ipcServer.PushToClient(ipcServer.LastPauseStateError);
+                        if (!ipcServer.HasClient)
+                            StartMainApp();
+                        else
+                        {
+                            _ = ipcServer.PushToClient(ipcServer.LastPauseStateError);
+                        }
                     }
-                }
 
-                return Task.CompletedTask;
-            }).ConfigureAwait(false);
+                    return Task.CompletedTask;
+                })
+                .ConfigureAwait(false);
+            if (sendResult)
+            {
+                StartMainAppToast(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), "已暂停加速器");
+            }
         }
 
         logger.LogInformation("SendPauseState Finish");
     }
 
-    public void StartMainApp()
+    public void StartMainAppToast(string message, string? tilte = null)
+    {
+        StartMainApp($"-Toast \"{message}{(string.IsNullOrWhiteSpace(tilte) ? "" : "&" + tilte)}\"");
+    }
+
+    public void StartMainApp(string? arguments = null)
     {
         var appName = Path.GetFileName(Process.GetCurrentProcess().MainModule!.FileName).Replace(".Service", "");
         logger.LogInformation("启动主应用 {appName} ", appName);
         try
         {
-            if (Process.GetProcessesByName(appName).Length > 0) return;
+            string[] possibles = [AppContext.BaseDirectory, Environment.CurrentDirectory, Path.Combine(Environment.CurrentDirectory, @"LeigodPause\bin\Debug\net481\win-x64")];
+            var appPath = possibles
+                .Select(p => Path.Combine(p, appName)).FirstOrDefault(File.Exists);
 
-            var appPath = Path.Combine(AppContext.BaseDirectory, appName);
+            if (string.IsNullOrEmpty(appPath))
+                throw new FileNotFoundException(appName);
 
+            logger.LogInformation("启动主应用 {appPath} {arguments} ", appName, arguments);
             // Windows 服务运行在 Session 0，直接 Process.Start 会把 GUI 启动在无交互桌面的
             // Session 0，用户看不到窗口。需拿到活动用户会话令牌，在用户桌面(winsta0\default)启动。
-            if (!TryLaunchInUserSession(appPath))
+            if (!TryLaunchInUserSession(appPath, arguments))
             {
                 // 兜底：当前进程本身就在用户会话（如调试时以当前用户运行）时仍可正常显示
-                Process.Start(new ProcessStartInfo(appPath) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(appPath) { UseShellExecute = true, Arguments = arguments! });
             }
         }
         catch (Exception e)
@@ -231,7 +246,7 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
     /// 在活动用户会话（winsta0\default 桌面）启动目标程序，使 GUI 对用户可见。
     /// 失败返回 false（无活动会话 / 令牌获取失败），交由调用方兜底。
     /// </summary>
-    private static bool TryLaunchInUserSession(string appPath)
+    private static bool TryLaunchInUserSession(string appPath, string? arguments = null)
     {
         IntPtr sessionInfo = IntPtr.Zero;
         IntPtr userToken = IntPtr.Zero;
@@ -288,8 +303,18 @@ public class Worker(ILogger<Worker> logger, ServiceIpcServer ipcServer, LeigodCo
                 lpDesktop = @"winsta0\default",
             };
 
+            // 关键修复：不要只把参数（-Toast ...）放进 lpCommandLine、把 exe 单独放进 lpApplicationName。
+            // 实测表明，lpApplicationName 指定且 lpCommandLine 以参数开头时，目标进程
+            // GetCommandLineArgs() 会丢掉首个 token（-Toast），只剩引号内 payload（见 App.OnStartup 的 -Toast 分支）。
+            // 改为把 exe 路径（加引号防空格）与参数一起放进 lpCommandLine、lpApplicationName 传 null，
+            // 与兜底分支 Process.Start(FileName=appPath, Arguments=arguments) 行为完全一致，
+            // 三种启动方式（调试 / 服务 CreateProcessAsUser / 兜底 Process.Start）命令行解析统一，-Toast 不再丢失。
+            var commandLine = string.IsNullOrEmpty(arguments)
+                ? $"\"{appPath}\""
+                : $"\"{appPath}\" {arguments}";
+
             if (NativeMethods.CreateProcessAsUser(
-                    primaryToken, appPath, null,
+                    primaryToken, null, commandLine,
                     IntPtr.Zero, IntPtr.Zero, false,
                     NativeMethods.NORMAL_PRIORITY_CLASS, IntPtr.Zero,
                     Path.GetDirectoryName(appPath), ref si, out _))

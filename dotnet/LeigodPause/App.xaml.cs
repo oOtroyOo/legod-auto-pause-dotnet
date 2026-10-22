@@ -58,9 +58,9 @@ public partial class App
                 .AddLogging(loggingBuilder =>
                 {
                     loggingBuilder.AddConsole();
-#if DEBUG
+// #if DEBUG
                     loggingBuilder.AddProvider(new FileLoggerProvider());
-#endif
+// #endif
                 })
                 .AddLeigodHttpClient()
                 .AddSingleton<MainView>()
@@ -71,11 +71,38 @@ public partial class App
                 .AddSingleton<ProtobufMsgEncoder>()
         ).Build();
 
+    private ILogger<App>? logger
+    {
+        get
+        {
+            field ??= Host.Services.GetRequiredService<ILoggerFactory>()?.CreateLogger<App>();
+            return field;
+        }
+    }
+
+
     /// <summary>
     /// Occurs when the application is loading.
     /// </summary>
     private void OnStartup(object sender, StartupEventArgs e)
     {
+        logger?.LogInformation("AppArgs = {0}", string.Join(", ", e.Args));
+        if (e.Args.IndexOf("-Toast") is var toastArg and > -1)
+        {
+            int toastIndex = toastArg + 1;
+            if (toastIndex < e.Args.Length)
+            {
+                string[] toastArgStr = e.Args[toastIndex].Split('&');
+                string msg = toastArgStr[0];
+                string? title = toastArgStr.Length <= 1 ? null : toastArgStr[1];
+                ToastUtility.Show(msg, title);
+            }
+
+
+            Shutdown(0);
+            return;
+        }
+
         // 单例校验：若已有实例在运行，通知其把窗口前置，并直接退出本进程。
         if (!TryAcquireSingleInstance())
         {

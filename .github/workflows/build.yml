@@ -2,14 +2,14 @@ name: Build
 
 on:
   push:
-    branches: [ main, dotnet ]
-    tags: [ 'v*' ]          # 推送版本标签（如 v1.0.0）时触发，并发布 Release
+    branches: [main, dotnet]
+    tags: ["v*"] # 推送版本标签（如 v1.0.0）时触发，并发布 Release
     # 仅当两个项目目录有变更时才触发构建。
     # 注意：GitHub 不对 tag 推送评估 paths，所以打标签发布 Release 不受影响。
     paths:
-      - 'dotnet/LeigodPause/**'
-      - 'dotnet/LeigodPause.Service/**'
-  workflow_dispatch:        # 手动触发不受 paths 限制
+      - "dotnet/LeigodPause/**"
+      - "dotnet/LeigodPause.Service/**"
+  workflow_dispatch: # 手动触发不受 paths 限制
 
 jobs:
   build:
@@ -24,7 +24,7 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: "9.0.x"
 
       # 与本地发布流程一致：执行仓库内的 publish.ps1
       # （脚本在 CI 下会自动跳过 Windows 服务启停与交互式 pause）
@@ -48,8 +48,12 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: windows-latest
     timeout-minutes: 30
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     permissions:
-      contents: write        # 创建 Release 需要写仓库内容权限
+      contents: write # 创建 Release 需要写仓库内容权限
 
     steps:
       - name: Download publish artifact
@@ -60,12 +64,10 @@ jobs:
 
       - name: Zip publish artifact
         shell: pwsh
-        run: Compress-Archive -Path LeigodPause-publish/* -DestinationPath LeigodPause-publish.zip
+        run: Compress-Archive -Path LeigodPause-publish/* -DestinationPath LeigodPause-${{ github.ref_name }}.zip
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name }}
-          files: LeigodPause-publish.zip
-          generate_release_notes: true
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --title "${GITHUB_REF_NAME}"

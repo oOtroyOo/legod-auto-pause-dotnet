@@ -6,6 +6,13 @@
       "environmentVariables": {
       },
       "workingDirectory": "$(SolutionDir)"
+    },
+    "LeigodPause.Toast": {
+      "commandName": "Project",
+      "environmentVariables": {
+      },
+      "workingDirectory": "$(SolutionDir)",
+      "commandLineArgs": "-Toast \"2026-10-22 11:44:27&已暂停加速器\""
     }
   }
 }

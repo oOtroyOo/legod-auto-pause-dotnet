@@ -11,9 +11,9 @@ public partial class LeigodCoreModel : ObservableObject
 
 
     // 三类操作各自独立的在途标志，互不阻塞：刷新 / 暂停 / 扫进程。
-    private int _infoInFlight;
-    private int _pauseInFlight;
-    private int _findInFlight;
+    private SemaphoreSlim _infoInFlight = new(1, 1);
+    private SemaphoreSlim _pauseInFlight = new(1, 1);
+    private SemaphoreSlim _findInFlight = new(1, 1);
 
     // 保护跨线程读写的状态字段（Service 端 Worker 线程 vs IPC 线程）。
     private readonly object _stateLock = new();
@@ -72,10 +72,7 @@ public partial class LeigodCoreModel : ObservableObject
     public async Task RequestUserInfo(Func<int, string?, Task>? onError = null)
     {
         // 在途保护：刷新与暂停/扫进程互不阻塞
-        if (Interlocked.Exchange(ref _infoInFlight, 1) == 1)
-        {
-            return;
-        }
+        await _infoInFlight.WaitAsync().ConfigureAwait(false);
 
         try
         {
@@ -116,7 +113,7 @@ public partial class LeigodCoreModel : ObservableObject
         }
         finally
         {
-            Interlocked.Exchange(ref _infoInFlight, 0);
+            _infoInFlight.Release();
             LastRequestInfoTime = DateTimeOffset.Now;
         }
     }
@@ -140,57 +137,68 @@ public partial class LeigodCoreModel : ObservableObject
     public async Task<bool> SendPauseState(Func<int, string?, Task>? onError = null)
     {
         // 在途保护：与刷新/扫进程互不阻塞
-        if (Interlocked.Exchange(ref _pauseInFlight, 1) == 1)
-        {
-            return false;
-        }
-
+        await _pauseInFlight.WaitAsync().ConfigureAwait(false);
         try
         {
-            var token = configFile.GetValue<string>("account_token");
-            if (token is { Length: > 0 })
+            try
             {
-                var httpClient = httpClientFactory.CreateClient(HttpClientExtensions.LeigodClientName);
-                // https://webapi.leigod.com/api/user/pause?os_type=5&account_token=xxxx&region_code=1&src_channel=guanwang&lang=zh_CN
-                string urlQuery = $"{Pause_url}?os_type={4}&account_token={token}&region_code={1}&src_channel=guanwang&lang=zh_CN";
-                var postMessage = await httpClient.PostAsync(urlQuery, new StringContent("{}")).ConfigureAwait(false);
-                postMessage.EnsureSuccessStatusCode();
-                var jsonStr = await postMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var jsonObject = JsonNode.Parse(jsonStr) as JsonObject;
-                var code = jsonObject?["code"]?.GetValue<int>();
-                var msg = jsonObject?["msg"]?.GetValue<string>();
-                if (code != null && code != 0 && onError != null)
+                if (!IsNotPaused)
+                    await RequestUserInfo();
+
+                if (!IsNotPaused)
                 {
-                    await InvokeOnUi(() => onError.Invoke((int)code, msg));
-                }
-                else
-                {
-                    // 暂停成功执行后清除退出计时，避免重复触发；下次游戏退出会重新计时
                     MatchedGameProcessExitTime = default;
+                    return false;
                 }
             }
+            catch
+            {
+                //
+            }
 
-            return true;
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "暂停调用失败");
-            return false;
+            try
+            {
+                var token = configFile.GetValue<string>("account_token");
+                if (token is { Length: > 0 })
+                {
+                    var httpClient = httpClientFactory.CreateClient(HttpClientExtensions.LeigodClientName);
+                    // https://webapi.leigod.com/api/user/pause?os_type=5&account_token=xxxx&region_code=1&src_channel=guanwang&lang=zh_CN
+                    string urlQuery = $"{Pause_url}?os_type={4}&account_token={token}&region_code={1}&src_channel=guanwang&lang=zh_CN";
+                    var postMessage = await httpClient.PostAsync(urlQuery, new StringContent("{}")).ConfigureAwait(false);
+                    postMessage.EnsureSuccessStatusCode();
+                    var jsonStr = await postMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var jsonObject = JsonNode.Parse(jsonStr) as JsonObject;
+                    var code = jsonObject?["code"]?.GetValue<int>();
+                    var msg = jsonObject?["msg"]?.GetValue<string>();
+                    if (code != null && code != 0 && onError != null)
+                    {
+                        await InvokeOnUi(() => onError.Invoke((int)code, msg));
+                    }
+                    else
+                    {
+                        // 暂停成功执行后清除退出计时，避免重复触发；下次游戏退出会重新计时
+                        MatchedGameProcessExitTime = default;
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "暂停调用失败");
+                return false;
+            }
         }
         finally
         {
-            Interlocked.Exchange(ref _pauseInFlight, 0);
+            _pauseInFlight.Release();
         }
     }
 
     public async Task<string> FindGameProcess()
     {
         // 在途保护：避免多次轮询并发扫进程、重复写状态
-        if (Interlocked.Exchange(ref _findInFlight, 1) == 1)
-        {
-            return MatchedGameProcess ?? string.Empty;
-        }
-
+        await _findInFlight.WaitAsync().ConfigureAwait(false);
         try
         {
             try
@@ -291,7 +299,7 @@ public partial class LeigodCoreModel : ObservableObject
         }
         finally
         {
-            Interlocked.Exchange(ref _findInFlight, 0);
+            _findInFlight.Release();
         }
     }
 
