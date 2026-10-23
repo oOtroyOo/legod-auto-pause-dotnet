@@ -165,7 +165,7 @@
 ## 十、致谢 / 参考
 
 - 本项目的架构与核心思路 Fork 自原 Python 项目
-  [**`leigod-auto-pause`**](https://github.com/6yy66yy/leigod-auto-pause)（作者 [@6yy66yy](https://github.com/6yy66yy)），
+  [**`leigod-auto-pause`**](https://github.com/6yy66yy/legod-auto-pause)（作者 [@6yy66yy](https://github.com/6yy66yy)），
   在此表示感谢。
 - 雷神加速器官方 Web API（`webapi.leigod.com`）仅作技术研究用途调用。
 
